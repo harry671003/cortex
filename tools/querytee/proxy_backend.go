@@ -13,6 +13,7 @@ import (
 )
 
 const orgIDHeader = "X-Scope-OrgId"
+const authHeader = "Authorization"
 
 // ProxyBackend holds the information of a single backend.
 type ProxyBackend struct {
@@ -24,15 +25,19 @@ type ProxyBackend struct {
 	// Whether this is the preferred backend from which picking up
 	// the response and sending it back to the client.
 	preferred bool
+
+	// Whether auth forwarding must be enabled.
+	enableAuthForwarding bool
 }
 
 // NewProxyBackend makes a new ProxyBackend
-func NewProxyBackend(name string, endpoint *url.URL, timeout time.Duration, preferred bool) *ProxyBackend {
+func NewProxyBackend(name string, endpoint *url.URL, timeout time.Duration, preferred bool, enableAuthForwarding bool) *ProxyBackend {
 	return &ProxyBackend{
-		name:      name,
-		endpoint:  endpoint,
-		timeout:   timeout,
-		preferred: preferred,
+		name:                 name,
+		endpoint:             endpoint,
+		timeout:              timeout,
+		preferred:            preferred,
+		enableAuthForwarding: enableAuthForwarding,
 		client: &http.Client{
 			CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
 				return errors.New("the query-tee proxy does not follow redirects")
@@ -73,20 +78,28 @@ func (b *ProxyBackend) createBackendRequest(orig *http.Request) (*http.Request, 
 	// Prepend the endpoint path to the request path.
 	req.URL.Path = path.Join(b.endpoint.Path, req.URL.Path)
 
-	// Replace the auth:
-	// - If the endpoint has user and password, use it.
-	// - If the endpoint has user only, keep it and use the request password (if any).
-	// - If the endpoint has no user and no password, use the request auth (if any).
-	clientUser, clientPass, clientAuth := orig.BasicAuth()
-	endpointUser := b.endpoint.User.Username()
-	endpointPass, _ := b.endpoint.User.Password()
+	if b.enableAuthForwarding {
+		// If there is Authorization header in the request, forward it.
+		// Authorization is not done in proxy backend.
+		if auth := orig.Header.Get(authHeader); auth != "" {
+			req.Header.Set(authHeader, auth)
+		}
+	} else {
+		// Replace the auth:
+		// - If the endpoint has user and password, use it.
+		// - If the endpoint has user only, keep it and use the request password (if any).
+		// - If the endpoint has no user and no password, use the request auth (if any).
+		clientUser, clientPass, clientAuth := orig.BasicAuth()
+		endpointUser := b.endpoint.User.Username()
+		endpointPass, _ := b.endpoint.User.Password()
 
-	if endpointUser != "" && endpointPass != "" {
-		req.SetBasicAuth(endpointUser, endpointPass)
-	} else if endpointUser != "" {
-		req.SetBasicAuth(endpointUser, clientPass)
-	} else if clientAuth {
-		req.SetBasicAuth(clientUser, clientPass)
+		if endpointUser != "" && endpointPass != "" {
+			req.SetBasicAuth(endpointUser, endpointPass)
+		} else if endpointUser != "" {
+			req.SetBasicAuth(endpointUser, clientPass)
+		} else if clientAuth {
+			req.SetBasicAuth(clientUser, clientPass)
+		}
 	}
 
 	// If there is X-Scope-OrgId header in the request, forward it. This is done even if there was username/password.

@@ -24,11 +24,12 @@ var (
 )
 
 type ProxyConfig struct {
-	ServerServicePort  int
-	BackendEndpoints   string
-	PreferredBackend   string
-	BackendReadTimeout time.Duration
-	CompareResponses   bool
+	ServerServicePort    int
+	BackendEndpoints     string
+	PreferredBackend     string
+	BackendReadTimeout   time.Duration
+	CompareResponses     bool
+	EnableAuthForwarding bool
 }
 
 func (cfg *ProxyConfig) RegisterFlags(f *flag.FlagSet) {
@@ -37,6 +38,7 @@ func (cfg *ProxyConfig) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&cfg.PreferredBackend, "backend.preferred", "", "The hostname of the preferred backend when selecting the response to send back to the client. If no preferred backend is configured then the query-tee will send back to the client the first successful response received without waiting for other backends.")
 	f.DurationVar(&cfg.BackendReadTimeout, "backend.read-timeout", 90*time.Second, "The timeout when reading the response from a backend.")
 	f.BoolVar(&cfg.CompareResponses, "proxy.compare-responses", false, "Compare responses between preferred and secondary endpoints for supported routes.")
+	f.BoolVar(&cfg.EnableAuthForwarding, "proxy.enable-auth-forwarding", false, "Forward incoming authorization header to backends.")
 }
 
 type Route struct {
@@ -99,7 +101,7 @@ func NewProxy(cfg ProxyConfig, logger log.Logger, routes []Route, registerer pro
 			preferred = preferredIdx == idx
 		}
 
-		p.backends = append(p.backends, NewProxyBackend(name, u, cfg.BackendReadTimeout, preferred))
+		p.backends = append(p.backends, NewProxyBackend(name, u, cfg.BackendReadTimeout, preferred, cfg.EnableAuthForwarding))
 	}
 
 	// At least 1 backend is required
