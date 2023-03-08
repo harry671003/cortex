@@ -17,12 +17,14 @@ import (
 const numPartitions = 16
 const numStoreGateways = 28
 const numDaysInThePast = 7
-const replicationFactor = 24
+const replicationFactor = 28
+const numQueriers = 80
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	sgs, sgsQueried := createStoreGateways(numStoreGateways)
 	blocks := createBlocks(numDaysInThePast, numPartitions)
+	queriers, querierEntropies := createQueriers(numQueriers)
 
 	// Randomize sgs
 	rand.Shuffle(len(sgs), func(i, j int) {
@@ -36,8 +38,11 @@ func main() {
 	fmt.Printf("Found %v blocks to query\n", len(blocksToQuery))
 
 	for i := 0; i < 1000; i++ {
-		// Running Queries
-		sgsToQuery := getStoreGatewaysForBlocks(blocksToQuery, ownership)
+		// First pick a querier to execute the query
+		// Since queriers are load balanced using a queue, let's assume round robin here.
+		q := queriers[i%len(queriers)]
+		querierEntropy := querierEntropies[q]
+		sgsToQuery := getStoreGatewaysForBlocks(querierEntropy, blocksToQuery, ownership)
 		for _, sg := range sgsToQuery {
 			sgsQueried[sg] += 1
 		}
@@ -79,14 +84,12 @@ func createBlocks(days int, partitions int) (blocks []Block) {
 	start := end.Add(-time.Duration(days) * 24 * time.Hour)
 	fmt.Printf("Creating blocks ranging: %s, %s\n", start.String(), end.String())
 
-	entropy := rand.New(rand.NewSource(time.Now().UnixNano()))
-
 	next := start
 	for next.Before(end) {
 		blockStart := next
 		blockEnd := next.Add(24 * time.Hour).Truncate(24 * time.Hour)
 		next = blockEnd
-
+		entropy := rand.New(rand.NewSource(time.Now().UnixNano()))
 		for i := 0; i < partitions; i++ {
 			id := ulid.MustNew(uint64(blockEnd.UnixMilli()), entropy)
 			blocks = append(blocks, Block{
@@ -109,6 +112,7 @@ func assignBlocks(blocks []Block, sgs []string) (ownership map[string][]string) 
 
 		sgsForBlock := []string{}
 		for i := 0; i < replicationFactor; i++ {
+			// This is an oversimplification of the algorithm
 			sg := (hash%uint32(len(sgs)) + uint32(i)) % uint32(len(sgs))
 			sgsForBlock = append(sgsForBlock, sgs[sg])
 		}
@@ -119,11 +123,11 @@ func assignBlocks(blocks []Block, sgs []string) (ownership map[string][]string) 
 	return ownership
 }
 
-func getStoreGatewaysForBlocks(blocksToQuery []Block, ownership map[string][]string) (sgsForBlocks []string) {
+func getStoreGatewaysForBlocks(entropy *rand.Rand, blocksToQuery []Block, ownership map[string][]string) (sgsForBlocks []string) {
 	sgsForBlocks = []string{}
 	for _, block := range blocksToQuery {
 		owners := ownership[block.id.String()]
-		rand.Shuffle(len(owners), func(i, j int) {
+		entropy.Shuffle(len(owners), func(i, j int) {
 			owners[i], owners[j] = owners[j], owners[i]
 		})
 		sgsForBlocks = append(sgsForBlocks, owners[0])
@@ -160,6 +164,19 @@ func getBlocksOwnershipCount(sgs []string, blocksToQuery []Block, ownership map[
 	}
 
 	return ownershipCount
+}
+
+func createQueriers(n int) (queriers []string, entropies map[string]*rand.Rand) {
+	queriers = []string{}
+	entropies = map[string]*rand.Rand{}
+
+	for i := 0; i < n; i++ {
+		q := fmt.Sprintf("querier-%d", i)
+		queriers = append(queriers, q)
+		entropy := rand.New(rand.NewSource(time.Now().UnixNano() + int64(i)))
+		entropies[q] = entropy
+	}
+	return queriers, entropies
 }
 
 func PlotGraph(picked map[string]int, file string, title string) {
