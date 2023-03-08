@@ -42,22 +42,12 @@ func main() {
 		}
 	}
 
-	ownershipCount := map[string]int{}
-
-	for _, block := range blocksToQuery {
-		for _, o := range ownership[block.id.String()] {
-			if cnt, ok := ownershipCount[o]; ok {
-				ownershipCount[o] = cnt + 1
-			} else {
-				ownershipCount[o] = 1
-			}
-		}
-	}
+	ownershipCount := getBlocksOwnershipCount(sgs, blocksToQuery, ownership)
 
 	fmt.Printf("Queried store-gateways: %v\n", sgsQueried)
 	fmt.Printf("Blocks owned by store-gateways: %v\n", ownershipCount)
-	PlotGraph(sgsQueried, "queried.png")
-	PlotGraph(ownershipCount, "blocksOwned.png")
+	PlotGraph(sgsQueried, "queried.png", "Requests per store-gateway")
+	PlotGraph(ownershipCount, "blocksOwned.png", "Blocks owned per store-gateway")
 }
 
 type Pair struct {
@@ -152,7 +142,23 @@ func getBlocksForTimeRange(blocks []Block, start, end time.Time) (blocksToQuery 
 	return blocksToQuery
 }
 
-func PlotGraph(picked map[string]int, file string) {
+func getBlocksOwnershipCount(sgs []string, blocksToQuery []Block, ownership map[string][]string) map[string]int {
+	ownershipCount := map[string]int{}
+
+	for _, sg := range sgs {
+		ownershipCount[sg] = 0
+	}
+
+	for _, block := range blocksToQuery {
+		for _, o := range ownership[block.id.String()] {
+			ownershipCount[o] += 1
+		}
+	}
+
+	return ownershipCount
+}
+
+func PlotGraph(picked map[string]int, file string, title string) {
 	p := plot.New()
 	values := plotter.Values{}
 
@@ -181,6 +187,7 @@ func PlotGraph(picked map[string]int, file string) {
 		panic(err)
 	}
 	p.Add((bars))
+	p.Title.Text = title
 	p.NominalX(keys...)
 	if err := p.Save(10*vg.Inch, 3*vg.Inch, file); err != nil {
 		panic(err)
