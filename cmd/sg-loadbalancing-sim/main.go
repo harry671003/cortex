@@ -1,0 +1,195 @@
+package main
+
+import (
+	"fmt"
+	"hash/fnv"
+	"math/rand"
+	"sort"
+	"time"
+
+	cortex_tsdb "github.com/cortexproject/cortex/pkg/storage/tsdb"
+	"github.com/oklog/ulid"
+	"gonum.org/v1/plot"
+	"gonum.org/v1/plot/plotter"
+	"gonum.org/v1/plot/vg"
+)
+
+const numPartitions = 16
+const numStoreGateways = 28
+const numDaysInThePast = 7
+
+func main() {
+	rand.Seed(time.Now().UnixNano())
+	sgs, sgsQueried := createStoreGateways(numStoreGateways)
+	blocks := createBlocks(numDaysInThePast, numPartitions)
+
+	// Randomize sgs
+	rand.Shuffle(len(sgs), func(i, j int) {
+		sgs[i], sgs[j] = sgs[j], sgs[i]
+	})
+
+	ownership := assignBlocks(blocks, sgs)
+
+	now := time.Now()
+	blocksToQuery := getBlocksForTimeRange(blocks, now.Add(-36*time.Hour), now.Add(-24*time.Hour))
+	fmt.Printf("Found %v blocks to query\n", len(blocksToQuery))
+
+	for i := 0; i < 1000; i++ {
+		// Running Queries
+		sgsToQuery := getStoreGatewaysForBlocks(blocksToQuery, ownership)
+		for _, sg := range sgsToQuery {
+			sgsQueried[sg] += 1
+		}
+	}
+
+	ownershipCount := map[string]int{}
+
+	for _, block := range blocksToQuery {
+		for _, o := range ownership[block.id.String()] {
+			if cnt, ok := ownershipCount[o]; ok {
+				ownershipCount[o] = cnt + 1
+			} else {
+				ownershipCount[o] = 1
+			}
+		}
+	}
+
+	fmt.Printf("Queried store-gateways: %v\n", sgsQueried)
+	fmt.Printf("Blocks owned by store-gateways: %v\n", ownershipCount)
+	PlotGraph(sgsQueried, "queried.png")
+	PlotGraph(ownershipCount, "blocksOwned.png")
+}
+
+type Pair struct {
+	Key   string
+	Value float64
+}
+
+type Block struct {
+	id      ulid.ULID
+	minTime int64
+	maxTime int64
+}
+
+func createStoreGateways(n int) (sgs []string, picked map[string]int) {
+	sgs = []string{}
+	picked = map[string]int{}
+
+	for i := 0; i < n; i++ {
+		sg := fmt.Sprintf("sg-%d", i)
+		sgs = append(sgs, sg)
+		picked[sg] = 0
+	}
+	return sgs, picked
+}
+
+func createBlocks(days int, partitions int) (blocks []Block) {
+	end := time.Now()
+	start := end.Add(-time.Duration(days) * 24 * time.Hour)
+	fmt.Printf("Creating blocks ranging: %s, %s\n", start.String(), end.String())
+
+	entropy := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	next := start
+	for next.Before(end) {
+		blockStart := next
+		blockEnd := next.Add(24 * time.Hour).Truncate(24 * time.Hour)
+		next = blockEnd
+
+		for i := 0; i < partitions; i++ {
+			id := ulid.MustNew(uint64(blockEnd.UnixMilli()), entropy)
+			blocks = append(blocks, Block{
+				id:      id,
+				minTime: blockStart.UnixMilli(),
+				maxTime: blockEnd.UnixMilli(),
+			})
+		}
+	}
+
+	return blocks
+}
+
+func assignBlocks(blocks []Block, sgs []string) (ownership map[string][]string) {
+	ownership = map[string][]string{}
+
+	// Assign blocks to store-gateways
+	for _, block := range blocks {
+		hash := uint64(cortex_tsdb.HashBlockID(block.id))
+		sg1 := hash % uint64(len(sgs))
+		sg2 := (sg1 + 1) % uint64(len(sgs))
+		sg3 := (sg1 + 2) % uint64(len(sgs))
+
+		ownership[block.id.String()] = []string{sgs[sg1], sgs[sg2], sgs[sg3]}
+	}
+
+	return ownership
+}
+
+func getStoreGatewaysForBlocks(blocksToQuery []Block, ownership map[string][]string) (sgsForBlocks []string) {
+	sgsForBlocks = []string{}
+	for _, block := range blocksToQuery {
+		owners := ownership[block.id.String()]
+		rand.Shuffle(len(owners), func(i, j int) {
+			owners[i], owners[j] = owners[j], owners[i]
+		})
+		sgsForBlocks = append(sgsForBlocks, owners[0])
+	}
+
+	return sgsForBlocks
+}
+
+func getBlocksForTimeRange(blocks []Block, start, end time.Time) (blocksToQuery []Block) {
+	blocksToQuery = []Block{}
+	startMilli := start.UnixMilli()
+	endMilli := end.UnixMilli()
+	fmt.Printf("Finding blocks for time: %v, %v\n", startMilli, endMilli)
+	for _, block := range blocks {
+		if startMilli <= block.maxTime && endMilli >= block.minTime {
+			blocksToQuery = append(blocksToQuery, block)
+		}
+	}
+
+	return blocksToQuery
+}
+
+func PlotGraph(picked map[string]int, file string) {
+	p := plot.New()
+	values := plotter.Values{}
+
+	keys := []string{}
+	pairs := []Pair{}
+	for k, v := range picked {
+		pairs = append(pairs, Pair{
+			Key:   k,
+			Value: float64(v),
+		})
+	}
+
+	sort.Slice(pairs, func(i, j int) bool {
+		return pairs[i].Value > pairs[j].Value
+	})
+	for _, p := range pairs {
+		keys = append(keys, p.Key)
+		v := float64(picked[p.Key])
+		values = append(values, v)
+	}
+
+	w := vg.Points(5)
+	bars, err := plotter.NewBarChart(values, w)
+	bars.Offset = -w
+	if err != nil {
+		panic(err)
+	}
+	p.Add((bars))
+	p.NominalX(keys...)
+	if err := p.Save(10*vg.Inch, 3*vg.Inch, file); err != nil {
+		panic(err)
+	}
+
+}
+
+func FNV32a(text string) int {
+	algorithm := fnv.New32()
+	algorithm.Write([]byte(text))
+	return int(algorithm.Sum32())
+}

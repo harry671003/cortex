@@ -66,3 +66,25 @@ func HashAddByte32(h uint32, b byte) uint32 {
 	h ^= uint32(b)
 	return h
 }
+
+// hashNew initializes a new fnv64a hash value.
+func HashNew() uint64 {
+	return offset64
+}
+
+// hashAdd adds a string to a fnv64a hash value, returning the updated hash.
+// Note this is the same algorithm as Go stdlib `sum64a.Write()`
+func HashAdd(h uint64, s string) uint64 {
+	for i := 0; i < len(s); i++ {
+		h ^= uint64(s[i])
+		h *= prime64
+	}
+	return h
+}
+
+// hashAddByte adds a byte to a fnv64a hash value, returning the updated hash.
+func HashAddByte(h uint64, b byte) uint64 {
+	h ^= uint64(b)
+	h *= prime64
+	return h
+}

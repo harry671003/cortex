@@ -15,3 +15,13 @@ func HashBlockID(id ulid.ULID) uint32 {
 	}
 	return h
 }
+
+// HashBlockID returns a 32-bit hash of the block ID useful for
+// ring-based sharding.
+func HashBlockID2(id ulid.ULID) uint64 {
+	h := client.HashNew()
+	for _, b := range id {
+		h = client.HashAddByte(h, b)
+	}
+	return h
+}

@@ -81,12 +81,15 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.2 // indirect
 	cloud.google.com/go/iam v0.8.0 // indirect
 	cloud.google.com/go/storage v1.27.0 // indirect
+	gioui.org v0.0.0-20210308172011-57750fc8a0a6 // indirect
+	git.sr.ht/~sbinet/gg v0.3.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.1.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.1.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.0.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.1 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.5.1 // indirect
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
+	github.com/ajstarks/svgo v0.0.0-20211024235047-1546f124cd8b // indirect
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alicebob/gopher-json v0.0.0-20200520072559-a9ecdc9d1d3a // indirect
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
@@ -116,6 +119,8 @@ require (
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
+	github.com/go-fonts/liberation v0.2.0 // indirect
+	github.com/go-latex/latex v0.0.0-20210823091927-c0d11ff05a81 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -127,9 +132,11 @@ require (
 	github.com/go-openapi/runtime v0.25.0 // indirect
 	github.com/go-openapi/spec v0.20.7 // indirect
 	github.com/go-openapi/validate v0.22.0 // indirect
+	github.com/go-pdf/fpdf v0.6.0 // indirect
 	github.com/gofrs/uuid v4.3.1+incompatible // indirect
 	github.com/gogo/googleapis v1.4.0 // indirect
 	github.com/golang-jwt/jwt v3.2.1+incompatible // indirect
+	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/btree v1.0.1 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
@@ -204,6 +211,8 @@ require (
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/crypto v0.6.0 // indirect
 	golang.org/x/exp v0.0.0-20221212164502-fae10dda9338 // indirect
+	golang.org/x/exp/shiny v0.0.0-20220722155223-a9213eeb770e // indirect
+	golang.org/x/image v0.0.0-20220902085622-e7cb96979f69 // indirect
 	golang.org/x/mod v0.7.0 // indirect
 	golang.org/x/oauth2 v0.3.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
@@ -211,12 +220,14 @@ require (
 	golang.org/x/tools v0.4.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	gonum.org/v1/gonum v0.12.0 // indirect
+	gonum.org/v1/plot v0.12.0 // indirect
 	google.golang.org/api v0.104.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20221207170731-23e4bf6bdc37 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
+	rsc.io/pdf v0.1.1 // indirect
 )
 
 // Override since git.apache.org is down.  The docs say to fetch from github.
