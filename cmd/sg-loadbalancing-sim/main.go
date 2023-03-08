@@ -17,6 +17,7 @@ import (
 const numPartitions = 16
 const numStoreGateways = 28
 const numDaysInThePast = 7
+const replicationFactor = 24
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
@@ -46,8 +47,8 @@ func main() {
 
 	fmt.Printf("Queried store-gateways: %v\n", sgsQueried)
 	fmt.Printf("Blocks owned by store-gateways: %v\n", ownershipCount)
-	PlotGraph(sgsQueried, "queried.png", "Requests per store-gateway")
-	PlotGraph(ownershipCount, "blocksOwned.png", "Blocks owned per store-gateway")
+	PlotGraph(sgsQueried, "queried.png", fmt.Sprintf("Requests per store-gateway (RF=%d)", replicationFactor))
+	PlotGraph(ownershipCount, "blocksOwned.png", fmt.Sprintf("Blocks owned per store-gateway (RF=%d)", replicationFactor))
 }
 
 type Pair struct {
@@ -104,12 +105,15 @@ func assignBlocks(blocks []Block, sgs []string) (ownership map[string][]string) 
 
 	// Assign blocks to store-gateways
 	for _, block := range blocks {
-		hash := uint64(cortex_tsdb.HashBlockID(block.id))
-		sg1 := hash % uint64(len(sgs))
-		sg2 := (sg1 + 1) % uint64(len(sgs))
-		sg3 := (sg1 + 2) % uint64(len(sgs))
+		hash := cortex_tsdb.HashBlockID(block.id)
 
-		ownership[block.id.String()] = []string{sgs[sg1], sgs[sg2], sgs[sg3]}
+		sgsForBlock := []string{}
+		for i := 0; i < replicationFactor; i++ {
+			sg := (hash%uint32(len(sgs)) + uint32(i)) % uint32(len(sgs))
+			sgsForBlock = append(sgsForBlock, sgs[sg])
+		}
+
+		ownership[block.id.String()] = sgsForBlock
 	}
 
 	return ownership
