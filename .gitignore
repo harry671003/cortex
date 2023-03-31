@@ -15,10 +15,14 @@ active-query-tracker
 dist/
 
 # Binaries built from ./cmd
-/blocksconvert
-/cortex
-/query-tee
-/test-exporter
+blocksconvert
+cortex
+query-tee
+test-exporter
+blocksconvert-amd64
+cortex-amd64
+query-tee-amd64
+test-exporter-amd64
 
 # This is custom Makefile modification, if it exists.
 Makefile.local
