@@ -15,9 +15,9 @@ import (
 )
 
 const numPartitions = 16
-const numStoreGateways = 28
+const numStoreGateways = 70
 const numDaysInThePast = 7
-const replicationFactor = 28
+const replicationFactor = 3
 const numQueriers = 80
 
 func main() {
@@ -34,7 +34,7 @@ func main() {
 	ownership := assignBlocks(blocks, sgs)
 
 	now := time.Now()
-	blocksToQuery := getBlocksForTimeRange(blocks, now.Add(-36*time.Hour), now.Add(-24*time.Hour))
+	blocksToQuery := getBlocksForTimeRange(blocks, now.Add(-90*time.Hour), now.Add(-89*time.Hour))
 	fmt.Printf("Found %v blocks to query\n", len(blocksToQuery))
 
 	for i := 0; i < 1000; i++ {
@@ -72,7 +72,7 @@ func createStoreGateways(n int) (sgs []string, picked map[string]int) {
 	picked = map[string]int{}
 
 	for i := 0; i < n; i++ {
-		sg := fmt.Sprintf("sg-%d", i)
+		sg := fmt.Sprintf("s%d", i)
 		sgs = append(sgs, sg)
 		picked[sg] = 0
 	}
@@ -210,7 +210,7 @@ func PlotGraph(picked map[string]int, file string, title string) {
 	p.Add((bars))
 	p.Title.Text = title
 	p.NominalX(keys...)
-	if err := p.Save(10*vg.Inch, 3*vg.Inch, file); err != nil {
+	if err := p.Save(20*vg.Inch, 3*vg.Inch, file); err != nil {
 		panic(err)
 	}
 
