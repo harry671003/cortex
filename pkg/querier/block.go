@@ -4,7 +4,7 @@ import (
 	"math"
 	"sort"
 
-	"github.com/cortexproject/cortex/pkg/storegateway/storepb"
+	"github.com/cortexproject/cortex/pkg/storegateway/typespb"
 	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
@@ -16,22 +16,22 @@ import (
 	"github.com/cortexproject/cortex/pkg/querier/series"
 )
 
-func convertMatchersToLabelMatcher(matchers []*labels.Matcher) []storepb.LabelMatcher {
-	var converted []storepb.LabelMatcher
+func convertMatchersToLabelMatcher(matchers []*labels.Matcher) []typespb.LabelMatcher {
+	var converted []typespb.LabelMatcher
 	for _, m := range matchers {
-		var t storepb.LabelMatcher_Type
+		var t typespb.LabelMatcher_Type
 		switch m.Type {
 		case labels.MatchEqual:
-			t = storepb.EQ
+			t = typespb.EQ
 		case labels.MatchNotEqual:
-			t = storepb.NEQ
+			t = typespb.NEQ
 		case labels.MatchRegexp:
-			t = storepb.RE
+			t = typespb.RE
 		case labels.MatchNotRegexp:
-			t = storepb.NRE
+			t = typespb.NRE
 		}
 
-		converted = append(converted, storepb.LabelMatcher{
+		converted = append(converted, typespb.LabelMatcher{
 			Type:  t,
 			Name:  m.Name,
 			Value: m.Value,
@@ -42,7 +42,7 @@ func convertMatchersToLabelMatcher(matchers []*labels.Matcher) []storepb.LabelMa
 
 // Implementation of storage.SeriesSet, based on individual responses from store client.
 type blockQuerierSeriesSet struct {
-	series   []*storepb.Series
+	series   []*typespb.Series
 	warnings annotations.Annotations
 
 	// next response to process
@@ -88,7 +88,7 @@ func (bqss *blockQuerierSeriesSet) Warnings() annotations.Annotations {
 }
 
 // newBlockQuerierSeries makes a new blockQuerierSeries. Input labels must be already sorted by name.
-func newBlockQuerierSeries(lbls []labels.Label, chunks []storepb.AggrChunk) *blockQuerierSeries {
+func newBlockQuerierSeries(lbls []labels.Label, chunks []typespb.AggrChunk) *blockQuerierSeries {
 	sort.Slice(chunks, func(i, j int) bool {
 		return chunks[i].MinTime < chunks[j].MinTime
 	})
@@ -98,7 +98,7 @@ func newBlockQuerierSeries(lbls []labels.Label, chunks []storepb.AggrChunk) *blo
 
 type blockQuerierSeries struct {
 	labels labels.Labels
-	chunks []storepb.AggrChunk
+	chunks []typespb.AggrChunk
 }
 
 func (bqs *blockQuerierSeries) Labels() labels.Labels {

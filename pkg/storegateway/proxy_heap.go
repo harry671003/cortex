@@ -18,6 +18,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 
 	"github.com/cortexproject/cortex/pkg/storegateway/storepb"
+	"github.com/cortexproject/cortex/pkg/storegateway/typespb"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
 )
 
@@ -104,11 +105,11 @@ func (d *dedupResponseHeap) Next() bool {
 }
 
 func chainSeriesAndRemIdenticalChunks(series []*storepb.SeriesResponse) *storepb.SeriesResponse {
-	chunkDedupMap := map[uint64]*storepb.AggrChunk{}
+	chunkDedupMap := map[uint64]*typespb.AggrChunk{}
 
 	for _, s := range series {
 		for _, chk := range s.GetSeries().Chunks {
-			for _, field := range []*storepb.Chunk{
+			for _, field := range []*typespb.Chunk{
 				chk.Raw, chk.Count, chk.Max, chk.Min, chk.Sum, chk.Counter,
 			} {
 				if field == nil {
@@ -133,7 +134,7 @@ func chainSeriesAndRemIdenticalChunks(series []*storepb.SeriesResponse) *storepb
 		return series[0]
 	}
 
-	finalChunks := make([]storepb.AggrChunk, 0, len(chunkDedupMap))
+	finalChunks := make([]typespb.AggrChunk, 0, len(chunkDedupMap))
 	for _, chk := range chunkDedupMap {
 		finalChunks = append(finalChunks, *chk)
 	}
@@ -142,7 +143,7 @@ func chainSeriesAndRemIdenticalChunks(series []*storepb.SeriesResponse) *storepb
 		return finalChunks[i].Compare(finalChunks[j]) > 0
 	})
 
-	return storepb.NewSeriesResponse(&storepb.Series{
+	return storepb.NewSeriesResponse(&typespb.Series{
 		Labels: series[0].GetSeries().Labels,
 		Chunks: finalChunks,
 	})

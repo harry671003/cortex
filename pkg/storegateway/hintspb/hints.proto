@@ -6,7 +6,7 @@ package hintspb;
 
 import "gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";
-import "github.com/cortexproject/cortex/pkg/storegateway/storepb/types.proto";
+import "github.com/cortexproject/cortex/pkg/storegateway/typespb/types.proto";
 
 option go_package = "hintspb";
 
@@ -24,7 +24,7 @@ message SeriesRequestHints {
     /// block_matchers is a list of label matchers that are evaluated against each single block's
     /// labels to filter which blocks get queried. If the list is empty, no per-block filtering
     /// is applied.
-    repeated storepb.LabelMatcher block_matchers = 1 [(gogoproto.nullable) = false];
+    repeated typespb.LabelMatcher block_matchers = 1 [(gogoproto.nullable) = false];
 
     bool enable_query_stats = 2;
 }
@@ -45,7 +45,7 @@ message LabelNamesRequestHints {
     /// block_matchers is a list of label matchers that are evaluated against each single block's
     /// labels to filter which blocks get queried. If the list is empty, no per-block filtering
     /// is applied.
-    repeated storepb.LabelMatcher block_matchers = 1 [(gogoproto.nullable) = false];
+    repeated typespb.LabelMatcher block_matchers = 1 [(gogoproto.nullable) = false];
 }
 
 message LabelNamesResponseHints {
@@ -57,7 +57,7 @@ message LabelValuesRequestHints {
     /// block_matchers is a list of label matchers that are evaluated against each single block's
     /// labels to filter which blocks get queried. If the list is empty, no per-block filtering
     /// is applied.
-    repeated storepb.LabelMatcher block_matchers = 1 [(gogoproto.nullable) = false];
+    repeated typespb.LabelMatcher block_matchers = 1 [(gogoproto.nullable) = false];
 }
 
 message LabelValuesResponseHints {

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/cortexproject/cortex/pkg/storegateway/storepb"
+	"github.com/cortexproject/cortex/pkg/storegateway/typespb"
 	"github.com/go-kit/log"
 	"github.com/gogo/status"
 	"github.com/oklog/ulid"
@@ -592,16 +593,16 @@ func generateStorageBlock(t *testing.T, storageDir, userID string, metricName st
 	require.NoError(t, db.Snapshot(userDir, true))
 }
 
-func querySeries(stores *BucketStores, userID, metricName string, minT, maxT int64) ([]*storepb.Series, annotations.Annotations, error) {
+func querySeries(stores *BucketStores, userID, metricName string, minT, maxT int64) ([]*typespb.Series, annotations.Annotations, error) {
 	req := &storepb.SeriesRequest{
 		MinTime: minT,
 		MaxTime: maxT,
-		Matchers: []storepb.LabelMatcher{{
-			Type:  storepb.EQ,
+		Matchers: []typespb.LabelMatcher{{
+			Type:  typespb.EQ,
 			Name:  labels.MetricName,
 			Value: metricName,
 		}},
-		PartialResponseStrategy: storepb.ABORT,
+		PartialResponseStrategy: typespb.ABORT,
 	}
 
 	ctx := setUserIDToGRPCContext(context.Background(), userID)
@@ -615,12 +616,12 @@ func queryLabelsNames(stores *BucketStores, userID, metricName string, start, en
 	req := &storepb.LabelNamesRequest{
 		Start: start,
 		End:   end,
-		Matchers: []storepb.LabelMatcher{{
-			Type:  storepb.EQ,
+		Matchers: []typespb.LabelMatcher{{
+			Type:  typespb.EQ,
 			Name:  labels.MetricName,
 			Value: metricName,
 		}},
-		PartialResponseStrategy: storepb.ABORT,
+		PartialResponseStrategy: typespb.ABORT,
 	}
 
 	ctx := setUserIDToGRPCContext(context.Background(), userID)
@@ -632,12 +633,12 @@ func queryLabelsValues(stores *BucketStores, userID, labelName, metricName strin
 		Start: start,
 		End:   end,
 		Label: labelName,
-		Matchers: []storepb.LabelMatcher{{
-			Type:  storepb.EQ,
+		Matchers: []typespb.LabelMatcher{{
+			Type:  typespb.EQ,
 			Name:  labels.MetricName,
 			Value: metricName,
 		}},
-		PartialResponseStrategy: storepb.ABORT,
+		PartialResponseStrategy: typespb.ABORT,
 	}
 
 	ctx := setUserIDToGRPCContext(context.Background(), userID)

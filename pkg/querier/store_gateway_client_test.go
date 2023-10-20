@@ -25,7 +25,7 @@ func Test_newStoreGatewayClientFactory(t *testing.T) {
 	defer grpcServer.GracefulStop()
 
 	srv := &mockStoreGatewayServer{}
-	storegatewaypb.RegisterStoreGatewayServer(grpcServer, srv)
+	storegatewaypb.RegisterIndexGatewayServer(grpcServer, srv)
 
 	listener, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err)
@@ -70,7 +70,11 @@ func Test_newStoreGatewayClientFactory(t *testing.T) {
 
 type mockStoreGatewayServer struct{}
 
-func (m *mockStoreGatewayServer) Series(_ *storepb.SeriesRequest, srv storegatewaypb.StoreGateway_SeriesServer) error {
+func (m *mockStoreGatewayServer) Series(_ *storepb.SeriesRequest, srv storegatewaypb.IndexGateway_SeriesServer) error {
+	return nil
+}
+
+func (m *mockStoreGatewayServer) Select(_ *storepb.SelectRequest, srv storegatewaypb.IndexGateway_SelectServer) error {
 	return nil
 }
 

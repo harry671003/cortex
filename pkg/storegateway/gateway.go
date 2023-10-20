@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cortexproject/cortex/pkg/storegateway/storepb"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/pkg/errors"
@@ -22,6 +21,7 @@ import (
 	"github.com/cortexproject/cortex/pkg/storage/bucket"
 	cortex_tsdb "github.com/cortexproject/cortex/pkg/storage/tsdb"
 	"github.com/cortexproject/cortex/pkg/storegateway/storegatewaypb"
+	"github.com/cortexproject/cortex/pkg/storegateway/storepb"
 	"github.com/cortexproject/cortex/pkg/util"
 	"github.com/cortexproject/cortex/pkg/util/services"
 	"github.com/cortexproject/cortex/pkg/util/validation"
@@ -358,8 +358,12 @@ func (g *StoreGateway) syncStores(ctx context.Context, reason string) {
 	}
 }
 
-func (g *StoreGateway) Series(req *storepb.SeriesRequest, srv storegatewaypb.StoreGateway_SeriesServer) error {
+func (g *StoreGateway) Series(req *storepb.SeriesRequest, srv storegatewaypb.IndexGateway_SeriesServer) error {
 	return g.stores.Series(req, srv)
+}
+
+func (g *StoreGateway) Select(req *storepb.SelectRequest, srv storegatewaypb.IndexGateway_SelectServer) error {
+	return g.stores.Select(req, srv)
 }
 
 // LabelNames implements the Storegateway proto service.

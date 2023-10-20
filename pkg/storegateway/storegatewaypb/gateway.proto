@@ -1,11 +1,12 @@
 syntax = "proto3";
 package gatewaypb;
 
-import "github.com/thanos-io/thanos/pkg/store/storepb/rpc.proto";
+import "github.com/cortexproject/cortex/pkg/storegateway/storepb/rpc.proto";
+import "github.com/cortexproject/cortex/pkg/storegateway/typespb/types.proto";
 
 option go_package = "storegatewaypb";
 
-service StoreGateway {
+service IndexGateway {
     // Series streams each Series for given label matchers and time range.
     //
     // Series should strictly stream full series after series, optionally split by time. This means that a single frame can contain
@@ -13,11 +14,21 @@ service StoreGateway {
     // be sent for previous one.
     //
     // Series are sorted.
-    rpc Series(thanos.SeriesRequest) returns (stream thanos.SeriesResponse);
+    rpc Series(storepb.SeriesRequest) returns (stream storepb.SeriesResponse);
+
+    rpc Select(storepb.SelectRequest) returns (stream storepb.SelectResponse);
+
+    
 
     // LabelNames returns all label names that is available.
-    rpc LabelNames(thanos.LabelNamesRequest) returns (thanos.LabelNamesResponse);
+    rpc LabelNames(storepb.LabelNamesRequest) returns (storepb.LabelNamesResponse);
 
     // LabelValues returns all label values for given label name.
-    rpc LabelValues(thanos.LabelValuesRequest) returns (thanos.LabelValuesResponse);
+    rpc LabelValues(storepb.LabelValuesRequest) returns (storepb.LabelValuesResponse);
+
+}
+
+
+service ChunksGateway {
+    rpc Chunks(stream storepb.ChunksRequest) returns (stream storepb.ChunksResponse);
 }

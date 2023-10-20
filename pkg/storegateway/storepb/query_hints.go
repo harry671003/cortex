@@ -6,11 +6,13 @@ package storepb
 import (
 	"fmt"
 	"strings"
+
+	typespb "github.com/cortexproject/cortex/pkg/storegateway/typespb"
 )
 
-func (m *QueryHints) toPromQL(labelMatchers []LabelMatcher) string {
+func (m *QueryHints) toPromQL(labelMatchers []typespb.LabelMatcher) string {
 	grouping := m.Grouping.toPromQL()
-	matchers := MatchersToString(labelMatchers...)
+	matchers := typespb.MatchersToString(labelMatchers...)
 	queryRange := m.Range.toPromQL()
 
 	query := fmt.Sprintf("%s %s (%s%s)", m.Func.Name, grouping, matchers, queryRange)

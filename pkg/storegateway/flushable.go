@@ -8,6 +8,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/cortexproject/cortex/pkg/storegateway/storepb"
+	"github.com/cortexproject/cortex/pkg/storegateway/typespb"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
 )
 
@@ -53,7 +54,7 @@ func (p *passthroughServer) Flush() error { return nil }
 // Data is resorted and sent to an upstream server upon calling Flush.
 type resortingServer struct {
 	storepb.Store_SeriesServer
-	series []*storepb.Series
+	series []*typespb.Series
 }
 
 func (r *resortingServer) Send(response *storepb.SeriesResponse) error {
@@ -68,7 +69,7 @@ func (r *resortingServer) Send(response *storepb.SeriesResponse) error {
 }
 
 func (r *resortingServer) Flush() error {
-	slices.SortFunc(r.series, func(a, b *storepb.Series) int {
+	slices.SortFunc(r.series, func(a, b *typespb.Series) int {
 		return labels.Compare(
 			labelpb.ZLabelsToPromLabels(a.Labels),
 			labelpb.ZLabelsToPromLabels(b.Labels),

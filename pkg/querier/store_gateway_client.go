@@ -43,14 +43,14 @@ func dialStoreGatewayClient(clientCfg grpcclient.Config, addr string, requestDur
 	}
 
 	return &storeGatewayClient{
-		StoreGatewayClient: storegatewaypb.NewStoreGatewayClient(conn),
+		IndexGatewayClient: storegatewaypb.NewIndexGatewayClient(conn),
 		HealthClient:       grpc_health_v1.NewHealthClient(conn),
 		conn:               conn,
 	}, nil
 }
 
 type storeGatewayClient struct {
-	storegatewaypb.StoreGatewayClient
+	storegatewaypb.IndexGatewayClient
 	grpc_health_v1.HealthClient
 	conn *grpc.ClientConn
 }

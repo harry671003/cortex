@@ -6,6 +6,7 @@ package storepb
 import (
 	context "context"
 	fmt "fmt"
+	typespb "github.com/cortexproject/cortex/pkg/storegateway/typespb"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
@@ -65,15 +66,15 @@ func (Aggr) EnumDescriptor() ([]byte, []int) {
 }
 
 type SeriesRequest struct {
-	MinTime             int64          `protobuf:"varint,1,opt,name=min_time,json=minTime,proto3" json:"min_time,omitempty"`
-	MaxTime             int64          `protobuf:"varint,2,opt,name=max_time,json=maxTime,proto3" json:"max_time,omitempty"`
-	Matchers            []LabelMatcher `protobuf:"bytes,3,rep,name=matchers,proto3" json:"matchers"`
-	MaxResolutionWindow int64          `protobuf:"varint,4,opt,name=max_resolution_window,json=maxResolutionWindow,proto3" json:"max_resolution_window,omitempty"`
-	Aggregates          []Aggr         `protobuf:"varint,5,rep,packed,name=aggregates,proto3,enum=storepb.Aggr" json:"aggregates,omitempty"`
+	MinTime             int64                  `protobuf:"varint,1,opt,name=min_time,json=minTime,proto3" json:"min_time,omitempty"`
+	MaxTime             int64                  `protobuf:"varint,2,opt,name=max_time,json=maxTime,proto3" json:"max_time,omitempty"`
+	Matchers            []typespb.LabelMatcher `protobuf:"bytes,3,rep,name=matchers,proto3" json:"matchers"`
+	MaxResolutionWindow int64                  `protobuf:"varint,4,opt,name=max_resolution_window,json=maxResolutionWindow,proto3" json:"max_resolution_window,omitempty"`
+	Aggregates          []Aggr                 `protobuf:"varint,5,rep,packed,name=aggregates,proto3,enum=storepb.Aggr" json:"aggregates,omitempty"`
 	// Deprecated. Use partial_response_strategy instead.
 	PartialResponseDisabled bool `protobuf:"varint,6,opt,name=partial_response_disabled,json=partialResponseDisabled,proto3" json:"partial_response_disabled,omitempty"`
 	// TODO(bwplotka): Move Thanos components to use strategy instead. Including QueryAPI.
-	PartialResponseStrategy PartialResponseStrategy `protobuf:"varint,7,opt,name=partial_response_strategy,json=partialResponseStrategy,proto3,enum=storepb.PartialResponseStrategy" json:"partial_response_strategy,omitempty"`
+	PartialResponseStrategy typespb.PartialResponseStrategy `protobuf:"varint,7,opt,name=partial_response_strategy,json=partialResponseStrategy,proto3,enum=typespb.PartialResponseStrategy" json:"partial_response_strategy,omitempty"`
 	// skip_chunks controls whether sending chunks or not in series responses.
 	SkipChunks bool `protobuf:"varint,8,opt,name=skip_chunks,json=skipChunks,proto3" json:"skip_chunks,omitempty"`
 	// hints is an opaque data structure that can be used to carry additional information.
@@ -387,7 +388,7 @@ type isSeriesResponse_Result interface {
 }
 
 type SeriesResponse_Series struct {
-	Series *Series `protobuf:"bytes,1,opt,name=series,proto3,oneof"`
+	Series *typespb.Series `protobuf:"bytes,1,opt,name=series,proto3,oneof"`
 }
 type SeriesResponse_Warning struct {
 	Warning string `protobuf:"bytes,2,opt,name=warning,proto3,oneof"`
@@ -407,7 +408,7 @@ func (m *SeriesResponse) GetResult() isSeriesResponse_Result {
 	return nil
 }
 
-func (m *SeriesResponse) GetSeries() *Series {
+func (m *SeriesResponse) GetSeries() *typespb.Series {
 	if x, ok := m.GetResult().(*SeriesResponse_Series); ok {
 		return x.Series
 	}
@@ -440,14 +441,14 @@ func (*SeriesResponse) XXX_OneofWrappers() []interface{} {
 type LabelNamesRequest struct {
 	PartialResponseDisabled bool `protobuf:"varint,1,opt,name=partial_response_disabled,json=partialResponseDisabled,proto3" json:"partial_response_disabled,omitempty"`
 	// TODO(bwplotka): Move Thanos components to use strategy instead. Including QueryAPI.
-	PartialResponseStrategy PartialResponseStrategy `protobuf:"varint,2,opt,name=partial_response_strategy,json=partialResponseStrategy,proto3,enum=storepb.PartialResponseStrategy" json:"partial_response_strategy,omitempty"`
-	Start                   int64                   `protobuf:"varint,3,opt,name=start,proto3" json:"start,omitempty"`
-	End                     int64                   `protobuf:"varint,4,opt,name=end,proto3" json:"end,omitempty"`
+	PartialResponseStrategy typespb.PartialResponseStrategy `protobuf:"varint,2,opt,name=partial_response_strategy,json=partialResponseStrategy,proto3,enum=typespb.PartialResponseStrategy" json:"partial_response_strategy,omitempty"`
+	Start                   int64                           `protobuf:"varint,3,opt,name=start,proto3" json:"start,omitempty"`
+	End                     int64                           `protobuf:"varint,4,opt,name=end,proto3" json:"end,omitempty"`
 	// hints is an opaque data structure that can be used to carry additional information.
 	// The content of this field and whether it's supported depends on the
 	// implementation of a specific store.
-	Hints    *types.Any     `protobuf:"bytes,5,opt,name=hints,proto3" json:"hints,omitempty"`
-	Matchers []LabelMatcher `protobuf:"bytes,6,rep,name=matchers,proto3" json:"matchers"`
+	Hints    *types.Any             `protobuf:"bytes,5,opt,name=hints,proto3" json:"hints,omitempty"`
+	Matchers []typespb.LabelMatcher `protobuf:"bytes,6,rep,name=matchers,proto3" json:"matchers"`
 }
 
 func (m *LabelNamesRequest) Reset()      { *m = LabelNamesRequest{} }
@@ -527,14 +528,14 @@ type LabelValuesRequest struct {
 	Label                   string `protobuf:"bytes,1,opt,name=label,proto3" json:"label,omitempty"`
 	PartialResponseDisabled bool   `protobuf:"varint,2,opt,name=partial_response_disabled,json=partialResponseDisabled,proto3" json:"partial_response_disabled,omitempty"`
 	// TODO(bwplotka): Move Thanos components to use strategy instead. Including QueryAPI.
-	PartialResponseStrategy PartialResponseStrategy `protobuf:"varint,3,opt,name=partial_response_strategy,json=partialResponseStrategy,proto3,enum=storepb.PartialResponseStrategy" json:"partial_response_strategy,omitempty"`
-	Start                   int64                   `protobuf:"varint,4,opt,name=start,proto3" json:"start,omitempty"`
-	End                     int64                   `protobuf:"varint,5,opt,name=end,proto3" json:"end,omitempty"`
+	PartialResponseStrategy typespb.PartialResponseStrategy `protobuf:"varint,3,opt,name=partial_response_strategy,json=partialResponseStrategy,proto3,enum=typespb.PartialResponseStrategy" json:"partial_response_strategy,omitempty"`
+	Start                   int64                           `protobuf:"varint,4,opt,name=start,proto3" json:"start,omitempty"`
+	End                     int64                           `protobuf:"varint,5,opt,name=end,proto3" json:"end,omitempty"`
 	// hints is an opaque data structure that can be used to carry additional information.
 	// The content of this field and whether it's supported depends on the
 	// implementation of a specific store.
-	Hints    *types.Any     `protobuf:"bytes,6,opt,name=hints,proto3" json:"hints,omitempty"`
-	Matchers []LabelMatcher `protobuf:"bytes,7,rep,name=matchers,proto3" json:"matchers"`
+	Hints    *types.Any             `protobuf:"bytes,6,opt,name=hints,proto3" json:"hints,omitempty"`
+	Matchers []typespb.LabelMatcher `protobuf:"bytes,7,rep,name=matchers,proto3" json:"matchers"`
 }
 
 func (m *LabelValuesRequest) Reset()      { *m = LabelValuesRequest{} }
@@ -611,15 +612,15 @@ func (m *LabelValuesResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_LabelValuesResponse proto.InternalMessageInfo
 
 type SelectRequest struct {
-	MinTime             int64          `protobuf:"varint,1,opt,name=min_time,json=minTime,proto3" json:"min_time,omitempty"`
-	MaxTime             int64          `protobuf:"varint,2,opt,name=max_time,json=maxTime,proto3" json:"max_time,omitempty"`
-	Matchers            []LabelMatcher `protobuf:"bytes,3,rep,name=matchers,proto3" json:"matchers"`
-	MaxResolutionWindow int64          `protobuf:"varint,4,opt,name=max_resolution_window,json=maxResolutionWindow,proto3" json:"max_resolution_window,omitempty"`
-	Aggregates          []Aggr         `protobuf:"varint,5,rep,packed,name=aggregates,proto3,enum=storepb.Aggr" json:"aggregates,omitempty"`
+	MinTime             int64                  `protobuf:"varint,1,opt,name=min_time,json=minTime,proto3" json:"min_time,omitempty"`
+	MaxTime             int64                  `protobuf:"varint,2,opt,name=max_time,json=maxTime,proto3" json:"max_time,omitempty"`
+	Matchers            []typespb.LabelMatcher `protobuf:"bytes,3,rep,name=matchers,proto3" json:"matchers"`
+	MaxResolutionWindow int64                  `protobuf:"varint,4,opt,name=max_resolution_window,json=maxResolutionWindow,proto3" json:"max_resolution_window,omitempty"`
+	Aggregates          []Aggr                 `protobuf:"varint,5,rep,packed,name=aggregates,proto3,enum=storepb.Aggr" json:"aggregates,omitempty"`
 	// Deprecated. Use partial_response_strategy instead.
 	PartialResponseDisabled bool `protobuf:"varint,6,opt,name=partial_response_disabled,json=partialResponseDisabled,proto3" json:"partial_response_disabled,omitempty"`
 	// TODO(bwplotka): Move Thanos components to use strategy instead. Including QueryAPI.
-	PartialResponseStrategy PartialResponseStrategy `protobuf:"varint,7,opt,name=partial_response_strategy,json=partialResponseStrategy,proto3,enum=storepb.PartialResponseStrategy" json:"partial_response_strategy,omitempty"`
+	PartialResponseStrategy typespb.PartialResponseStrategy `protobuf:"varint,7,opt,name=partial_response_strategy,json=partialResponseStrategy,proto3,enum=typespb.PartialResponseStrategy" json:"partial_response_strategy,omitempty"`
 	// skip_chunks controls whether sending chunks or not in series responses.
 	SkipChunks bool `protobuf:"varint,8,opt,name=skip_chunks,json=skipChunks,proto3" json:"skip_chunks,omitempty"`
 	// hints is an opaque data structure that can be used to carry additional information.
@@ -730,7 +731,7 @@ type isSelectResponse_Result interface {
 }
 
 type SelectResponse_Series struct {
-	Series *SelectedSeries `protobuf:"bytes,1,opt,name=series,proto3,oneof"`
+	Series *typespb.SelectedSeries `protobuf:"bytes,1,opt,name=series,proto3,oneof"`
 }
 type SelectResponse_Warning struct {
 	Warning string `protobuf:"bytes,2,opt,name=warning,proto3,oneof"`
@@ -750,7 +751,7 @@ func (m *SelectResponse) GetResult() isSelectResponse_Result {
 	return nil
 }
 
-func (m *SelectResponse) GetSeries() *SelectedSeries {
+func (m *SelectResponse) GetSeries() *typespb.SelectedSeries {
 	if x, ok := m.GetResult().(*SelectResponse_Series); ok {
 		return x.Series
 	}
@@ -780,6 +781,79 @@ func (*SelectResponse) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+type ChunksRequest struct {
+	BlockId  string   `protobuf:"bytes,1,opt,name=blockId,proto3" json:"blockId,omitempty"`
+	Chunkref []uint64 `protobuf:"varint,2,rep,packed,name=chunkref,proto3" json:"chunkref,omitempty"`
+}
+
+func (m *ChunksRequest) Reset()      { *m = ChunksRequest{} }
+func (*ChunksRequest) ProtoMessage() {}
+func (*ChunksRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{13}
+}
+func (m *ChunksRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ChunksRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ChunksRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ChunksRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ChunksRequest.Merge(m, src)
+}
+func (m *ChunksRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *ChunksRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ChunksRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ChunksRequest proto.InternalMessageInfo
+
+type ChunksResponse struct {
+	Chunks []*typespb.AggrChunk `protobuf:"bytes,1,rep,name=chunks,proto3" json:"chunks,omitempty"`
+}
+
+func (m *ChunksResponse) Reset()      { *m = ChunksResponse{} }
+func (*ChunksResponse) ProtoMessage() {}
+func (*ChunksResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_77a6da22d6a3feb1, []int{14}
+}
+func (m *ChunksResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ChunksResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ChunksResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ChunksResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ChunksResponse.Merge(m, src)
+}
+func (m *ChunksResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *ChunksResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ChunksResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ChunksResponse proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterEnum("storepb.Aggr", Aggr_name, Aggr_value)
 	proto.RegisterType((*SeriesRequest)(nil), "storepb.SeriesRequest")
@@ -795,82 +869,91 @@ func init() {
 	proto.RegisterType((*LabelValuesResponse)(nil), "storepb.LabelValuesResponse")
 	proto.RegisterType((*SelectRequest)(nil), "storepb.SelectRequest")
 	proto.RegisterType((*SelectResponse)(nil), "storepb.SelectResponse")
+	proto.RegisterType((*ChunksRequest)(nil), "storepb.ChunksRequest")
+	proto.RegisterType((*ChunksResponse)(nil), "storepb.ChunksResponse")
 }
 
 func init() { proto.RegisterFile("rpc.proto", fileDescriptor_77a6da22d6a3feb1) }
 
 var fileDescriptor_77a6da22d6a3feb1 = []byte{
-	// 1111 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xec, 0x57, 0x4f, 0x6f, 0x1b, 0x45,
-	0x14, 0xdf, 0xf5, 0x7a, 0xfd, 0xe7, 0x6d, 0x63, 0xdc, 0x89, 0x9b, 0x6c, 0x0c, 0xda, 0xb8, 0x16,
-	0x07, 0x53, 0x51, 0x87, 0x9a, 0x4a, 0x48, 0x70, 0x4a, 0x4a, 0x21, 0x95, 0x48, 0x80, 0x49, 0x4b,
-	0x11, 0x42, 0x5a, 0xad, 0xed, 0xc9, 0x66, 0xd5, 0xf5, 0xee, 0x66, 0x67, 0x96, 0xd8, 0x37, 0xbe,
-	0x01, 0x70, 0xe2, 0x13, 0x20, 0xf1, 0x19, 0xf8, 0x04, 0x39, 0x86, 0x03, 0x52, 0xc5, 0x01, 0x11,
-	0xe7, 0xc2, 0xb1, 0x1f, 0x01, 0xcd, 0xec, 0x78, 0x6d, 0x27, 0xa6, 0x55, 0x94, 0x0a, 0xf5, 0xd0,
-	0xdb, 0xbc, 0xf7, 0x7b, 0x7e, 0x3b, 0xef, 0xfd, 0x7e, 0x6f, 0x66, 0x0c, 0xe5, 0x38, 0xea, 0xb5,
-	0xa3, 0x38, 0x64, 0x21, 0x2a, 0x52, 0x16, 0xc6, 0x24, 0xea, 0xd6, 0x6b, 0x6e, 0xe8, 0x86, 0xc2,
-	0xb7, 0xc1, 0x57, 0x29, 0x5c, 0x37, 0xd8, 0x28, 0x22, 0x54, 0x1a, 0x6b, 0x6e, 0x18, 0xba, 0x3e,
-	0xd9, 0x10, 0x56, 0x37, 0xd9, 0xdf, 0x70, 0x82, 0x51, 0x0a, 0x35, 0x7f, 0xd2, 0x61, 0x69, 0x8f,
-	0xc4, 0x1e, 0xa1, 0x98, 0x1c, 0x26, 0x84, 0x32, 0xb4, 0x06, 0xa5, 0x81, 0x17, 0xd8, 0xcc, 0x1b,
-	0x10, 0x53, 0x6d, 0xa8, 0x2d, 0x0d, 0x17, 0x07, 0x5e, 0xf0, 0xd0, 0x1b, 0x10, 0x01, 0x39, 0xc3,
-	0x14, 0xca, 0x49, 0xc8, 0x19, 0x0a, 0xe8, 0x03, 0x0e, 0xb1, 0xde, 0x01, 0x89, 0xa9, 0xa9, 0x35,
-	0xb4, 0x96, 0xd1, 0xb9, 0xd1, 0x96, 0x3b, 0x6c, 0x7f, 0xe6, 0x74, 0x89, 0xbf, 0x93, 0xa2, 0x5b,
-	0xf9, 0xe3, 0xbf, 0xd6, 0x15, 0x9c, 0x05, 0xa3, 0x0e, 0xdc, 0xe0, 0x39, 0x63, 0x42, 0x43, 0x3f,
-	0x61, 0x5e, 0x18, 0xd8, 0x47, 0x5e, 0xd0, 0x0f, 0x8f, 0xcc, 0xbc, 0xf8, 0xc0, 0xf2, 0xc0, 0x19,
-	0xe2, 0x0c, 0x7b, 0x2c, 0x20, 0x74, 0x1b, 0xc0, 0x71, 0xdd, 0x98, 0xb8, 0x0e, 0x23, 0xd4, 0xd4,
-	0x1b, 0x5a, 0xab, 0xd2, 0x59, 0xca, 0x3e, 0xb7, 0xe9, 0xba, 0x31, 0x9e, 0x09, 0x40, 0x1f, 0xc2,
-	0x5a, 0xe4, 0xc4, 0xcc, 0x73, 0x7c, 0xfe, 0x99, 0x28, 0x0c, 0x28, 0xb1, 0xfb, 0x1e, 0x75, 0xba,
-	0x3e, 0xe9, 0x9b, 0x85, 0x86, 0xda, 0x2a, 0xe1, 0x55, 0x19, 0x80, 0x25, 0xfe, 0xb1, 0x84, 0xd1,
-	0xb7, 0x0b, 0x7e, 0x4b, 0x59, 0xec, 0x30, 0xe2, 0x8e, 0xcc, 0x62, 0x43, 0x6d, 0x55, 0x3a, 0x8d,
-	0xec, 0xcb, 0x5f, 0xcc, 0x27, 0xd9, 0x93, 0x71, 0x17, 0xb2, 0x4f, 0x00, 0xb4, 0x0e, 0x06, 0x7d,
-	0xe2, 0x45, 0x76, 0xef, 0x20, 0x09, 0x9e, 0x50, 0xb3, 0x24, 0xf6, 0x02, 0xdc, 0x75, 0x4f, 0x78,
-	0xd0, 0x2d, 0xd0, 0x0f, 0xbc, 0x80, 0x51, 0xb3, 0xdc, 0x50, 0x5b, 0x46, 0xa7, 0xd6, 0x4e, 0x99,
-	0x6c, 0x4f, 0x98, 0x6c, 0x6f, 0x06, 0x23, 0x9c, 0x86, 0x20, 0x04, 0x79, 0xca, 0x48, 0x64, 0x82,
-	0x68, 0x9c, 0x58, 0xa3, 0x1a, 0xe8, 0xb1, 0x13, 0xb8, 0xc4, 0x34, 0x84, 0x33, 0x35, 0xd0, 0x5d,
-	0x30, 0x0e, 0x13, 0x12, 0x8f, 0xec, 0x34, 0xf7, 0x35, 0x91, 0x7b, 0x39, 0x2b, 0xe3, 0x4b, 0x8e,
-	0x6d, 0x73, 0x08, 0xc3, 0x61, 0xb6, 0x46, 0x77, 0x00, 0xe8, 0x81, 0x13, 0xf7, 0x6d, 0x2f, 0xd8,
-	0x0f, 0xcd, 0x25, 0xf1, 0x23, 0x94, 0xfd, 0x68, 0x8f, 0x43, 0x0f, 0x82, 0xfd, 0x10, 0x97, 0xe9,
-	0x64, 0x89, 0xee, 0xc2, 0xca, 0x91, 0xc7, 0x0e, 0xc2, 0x84, 0xd9, 0x31, 0x89, 0x7c, 0xaf, 0xe7,
-	0xd8, 0x3e, 0x17, 0x03, 0x35, 0x2b, 0x0d, 0xad, 0x55, 0xc6, 0x35, 0x89, 0xe2, 0x14, 0x14, 0x42,
-	0xa1, 0xcd, 0x5f, 0x54, 0x80, 0xe9, 0x1e, 0x44, 0x93, 0x18, 0x89, 0xec, 0x81, 0xe7, 0xfb, 0x1e,
-	0x95, 0x9a, 0x04, 0xee, 0xda, 0x11, 0x1e, 0x74, 0x13, 0xf2, 0xfb, 0x49, 0xd0, 0x13, 0x92, 0x34,
-	0x66, 0x84, 0xf0, 0x49, 0x12, 0xf4, 0xb0, 0x80, 0xd0, 0x6d, 0x28, 0xb9, 0x71, 0x98, 0x44, 0x5e,
-	0xe0, 0x0a, 0x61, 0x19, 0x9d, 0xeb, 0x59, 0xd8, 0xa7, 0x12, 0xc0, 0x59, 0x08, 0x7a, 0x7b, 0xd2,
-	0x36, 0x5d, 0xc4, 0x56, 0xb2, 0x58, 0xcc, 0xbd, 0xb2, 0x8d, 0xcd, 0x23, 0x28, 0x67, 0x55, 0x8b,
-	0x5d, 0xca, 0xee, 0xf4, 0xc9, 0x30, 0xdb, 0x65, 0x8a, 0xf7, 0xc9, 0x10, 0xdd, 0x84, 0x6b, 0x2c,
-	0x64, 0x8e, 0x6f, 0x0b, 0x1f, 0x95, 0x03, 0x64, 0x08, 0x9f, 0x48, 0x43, 0x51, 0x05, 0x72, 0xdd,
-	0x91, 0xa9, 0x09, 0x15, 0xe4, 0xba, 0x23, 0xb4, 0x02, 0x05, 0xd9, 0xae, 0xbc, 0x68, 0x97, 0xb4,
-	0x9a, 0x75, 0xc8, 0xf3, 0xda, 0x38, 0xe3, 0x81, 0x23, 0xc7, 0xb4, 0x8c, 0xc5, 0xba, 0xd9, 0x81,
-	0xd2, 0xa4, 0x20, 0x99, 0x4f, 0x5d, 0x90, 0x4f, 0x9b, 0xcb, 0xb7, 0x0e, 0xba, 0x28, 0x8c, 0x07,
-	0xcc, 0x75, 0x59, 0x5a, 0xcd, 0x1f, 0x54, 0xa8, 0x4c, 0x4e, 0x89, 0x54, 0xc2, 0xe8, 0x1d, 0x28,
-	0x50, 0xe1, 0x11, 0xa1, 0x46, 0xe7, 0x8d, 0xa9, 0x12, 0x84, 0x7b, 0x5b, 0xc1, 0x32, 0x00, 0xd5,
-	0xa1, 0x78, 0xe4, 0xc4, 0x01, 0xef, 0x3d, 0x2f, 0xba, 0xbc, 0xad, 0xe0, 0x89, 0x03, 0xbd, 0x3b,
-	0x11, 0xb8, 0xf6, 0xdf, 0x02, 0xdf, 0x56, 0xa4, 0xc4, 0xb7, 0x4a, 0x50, 0x88, 0x09, 0x4d, 0x7c,
-	0xd6, 0xfc, 0x2d, 0x07, 0xd7, 0x85, 0x5c, 0x76, 0x9d, 0xc1, 0xf4, 0xec, 0x7a, 0xee, 0xa4, 0xab,
-	0x57, 0x98, 0xf4, 0xdc, 0x55, 0x27, 0xbd, 0x06, 0x3a, 0x65, 0x4e, 0xcc, 0x44, 0x9d, 0x1a, 0x4e,
-	0x0d, 0x54, 0x05, 0x8d, 0x04, 0x7d, 0x79, 0xd4, 0xf1, 0xe5, 0x74, 0xe0, 0xf5, 0x17, 0x0f, 0xfc,
-	0xec, 0x99, 0x5b, 0xb8, 0xc4, 0x99, 0xdb, 0x8c, 0x01, 0xcd, 0xf6, 0x4e, 0x32, 0x5a, 0x03, 0x9d,
-	0x2b, 0x88, 0x13, 0xca, 0xc5, 0x91, 0x1a, 0xa8, 0x0e, 0x25, 0xc9, 0x15, 0x97, 0x2c, 0x07, 0x32,
-	0x7b, 0xba, 0x59, 0xed, 0x85, 0x9b, 0x6d, 0xfe, 0x9e, 0x93, 0x1f, 0xfd, 0xca, 0xf1, 0x93, 0x29,
-	0x63, 0x35, 0xd0, 0x85, 0x08, 0xa5, 0x86, 0x53, 0xe3, 0xf9, 0x3c, 0xe6, 0xae, 0xc0, 0xa3, 0xf6,
-	0xd2, 0x78, 0xcc, 0x2f, 0xe0, 0x51, 0x5f, 0xc0, 0x63, 0xe1, 0x72, 0x3c, 0x16, 0x2f, 0xc3, 0x63,
-	0x02, 0xcb, 0x73, 0x2d, 0x95, 0x44, 0xae, 0x40, 0xe1, 0x3b, 0xe1, 0x91, 0x4c, 0x4a, 0xeb, 0xa5,
-	0x51, 0x99, 0xbe, 0x19, 0x7c, 0xd2, 0x63, 0xaf, 0xdf, 0x0c, 0xaf, 0xdf, 0x0c, 0xaf, 0xc6, 0x9b,
-	0xe1, 0x67, 0x71, 0x43, 0xa5, 0x9a, 0x94, 0x63, 0x70, 0xe7, 0xdc, 0x0d, 0xb5, 0x3a, 0x73, 0x43,
-	0xf1, 0x40, 0xd2, 0xff, 0x3f, 0x6e, 0xaa, 0x5b, 0x5b, 0x90, 0xe7, 0xea, 0x42, 0x45, 0xd0, 0xf0,
-	0xe6, 0xe3, 0xaa, 0x82, 0xca, 0xa0, 0xdf, 0xfb, 0xfc, 0xd1, 0xee, 0xc3, 0xaa, 0xca, 0x7d, 0x7b,
-	0x8f, 0x76, 0xaa, 0x39, 0xbe, 0xd8, 0x79, 0xb0, 0x5b, 0xd5, 0xc4, 0x62, 0xf3, 0xeb, 0x6a, 0x1e,
-	0x19, 0x50, 0x14, 0x51, 0xf7, 0x71, 0x55, 0xef, 0xfc, 0xa1, 0x82, 0xbe, 0xc7, 0x37, 0x8f, 0x3e,
-	0x82, 0x42, 0xba, 0x6b, 0xb4, 0x72, 0xee, 0xc2, 0x95, 0xb3, 0x58, 0x5f, 0xbd, 0xe0, 0x4f, 0xfb,
-	0xf1, 0x9e, 0x8a, 0xee, 0x03, 0x4c, 0xcf, 0x7d, 0x54, 0x9f, 0x1f, 0xb6, 0xd9, 0x8b, 0xb4, 0xfe,
-	0xe6, 0x42, 0x4c, 0x36, 0x76, 0x1b, 0x8c, 0x99, 0x63, 0x07, 0x9d, 0x8b, 0x9d, 0x3b, 0xdf, 0xeb,
-	0x6f, 0x2d, 0x06, 0xd3, 0x4c, 0x9d, 0x3f, 0x55, 0x00, 0xf1, 0x3a, 0x9a, 0x29, 0x8e, 0x53, 0x33,
-	0x57, 0xdc, 0xcc, 0x41, 0x53, 0x5f, 0xbd, 0xe0, 0x7f, 0x65, 0x8b, 0xdb, 0xda, 0x3c, 0x3e, 0xb5,
-	0x94, 0x93, 0x53, 0x4b, 0x79, 0x7a, 0x6a, 0x29, 0xcf, 0x4e, 0x2d, 0xf5, 0xfb, 0xb1, 0xa5, 0xfe,
-	0x3a, 0xb6, 0xd4, 0xe3, 0xb1, 0xa5, 0x9e, 0x8c, 0x2d, 0xf5, 0xef, 0xb1, 0xa5, 0xfe, 0x33, 0xb6,
-	0x94, 0x67, 0x63, 0x4b, 0xfd, 0xf1, 0xcc, 0x52, 0x4e, 0xce, 0x2c, 0xe5, 0xe9, 0x99, 0xa5, 0x7c,
-	0x33, 0xf9, 0x6f, 0xd7, 0x2d, 0x08, 0x71, 0xbd, 0xff, 0x6f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x75,
-	0x74, 0x4b, 0x5a, 0xf8, 0x0d, 0x00, 0x00,
+	// 1226 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xec, 0x57, 0xcd, 0x8e, 0xdb, 0x54,
+	0x14, 0xb6, 0xe3, 0x38, 0x3f, 0x27, 0x9d, 0x90, 0xde, 0xa6, 0x53, 0x37, 0x20, 0x37, 0x8d, 0x58,
+	0x84, 0x8a, 0x26, 0x6d, 0xa8, 0x84, 0xc4, 0xcf, 0x62, 0xa6, 0x2d, 0x4c, 0x05, 0x53, 0xc0, 0xd3,
+	0x52, 0x84, 0x90, 0x22, 0x27, 0xb9, 0xe3, 0x98, 0x71, 0x6c, 0x8f, 0xef, 0x35, 0x49, 0x76, 0xbc,
+	0x01, 0xb0, 0xe2, 0x09, 0x90, 0x78, 0x06, 0x9e, 0x60, 0x96, 0xc3, 0x02, 0xa9, 0x62, 0x81, 0x98,
+	0xcc, 0x86, 0x65, 0x1f, 0x01, 0xdd, 0x1f, 0x3b, 0x49, 0x27, 0xb4, 0x1a, 0x4d, 0x85, 0xba, 0xe8,
+	0x2a, 0xf7, 0x9c, 0xef, 0xf8, 0xf8, 0x9e, 0xf3, 0x7d, 0xe7, 0x5e, 0x07, 0x8a, 0x51, 0xd8, 0x6f,
+	0x85, 0x51, 0x40, 0x03, 0x94, 0x27, 0x34, 0x88, 0x70, 0xd8, 0xab, 0x55, 0x9d, 0xc0, 0x09, 0xb8,
+	0xaf, 0xcd, 0x56, 0x02, 0xae, 0xdd, 0x71, 0x5c, 0x3a, 0x8c, 0x7b, 0xad, 0x7e, 0x30, 0x6a, 0xf7,
+	0x83, 0x88, 0xe2, 0x49, 0x18, 0x05, 0xdf, 0xe2, 0x3e, 0x95, 0x56, 0x3b, 0xdc, 0x73, 0xda, 0x3c,
+	0x85, 0x63, 0x53, 0x3c, 0xb6, 0xa7, 0x6d, 0x3a, 0x0d, 0x31, 0x09, 0x7b, 0xe2, 0x57, 0x66, 0xb9,
+	0xec, 0x04, 0x81, 0xe3, 0xe1, 0x36, 0xb7, 0x7a, 0xf1, 0x6e, 0xdb, 0xf6, 0xa7, 0x02, 0x6a, 0xfc,
+	0xa4, 0xc3, 0xda, 0x0e, 0x8e, 0x5c, 0x4c, 0x2c, 0xbc, 0x1f, 0x63, 0x42, 0xd1, 0x65, 0x28, 0x8c,
+	0x5c, 0xbf, 0x4b, 0xdd, 0x11, 0x36, 0xd4, 0xba, 0xda, 0xd4, 0xac, 0xfc, 0xc8, 0xf5, 0x1f, 0xb8,
+	0x23, 0xcc, 0x21, 0x7b, 0x22, 0xa0, 0x8c, 0x84, 0xec, 0x09, 0x87, 0xde, 0x65, 0x10, 0xed, 0x0f,
+	0x71, 0x44, 0x0c, 0xad, 0xae, 0x35, 0x4b, 0x9d, 0x8b, 0x2d, 0xb9, 0x95, 0xd6, 0xa7, 0x76, 0x0f,
+	0x7b, 0xdb, 0x02, 0xdd, 0xcc, 0x1e, 0xfc, 0x75, 0x45, 0xb1, 0xd2, 0x60, 0xd4, 0x81, 0x8b, 0x2c,
+	0x67, 0x84, 0x49, 0xe0, 0xc5, 0xd4, 0x0d, 0xfc, 0xee, 0xd8, 0xf5, 0x07, 0xc1, 0xd8, 0xc8, 0xf2,
+	0x17, 0x5c, 0x18, 0xd9, 0x13, 0x2b, 0xc5, 0x1e, 0x71, 0x08, 0x5d, 0x07, 0xb0, 0x1d, 0x47, 0xd4,
+	0x4c, 0x0c, 0xbd, 0xae, 0x35, 0xcb, 0x9d, 0xb5, 0x96, 0xec, 0x64, 0x6b, 0xc3, 0x71, 0x22, 0x6b,
+	0x21, 0x00, 0xbd, 0x07, 0x97, 0x43, 0x3b, 0xa2, 0xae, 0xed, 0xb1, 0xd7, 0x84, 0x81, 0x4f, 0x70,
+	0x77, 0xe0, 0x12, 0xbb, 0xe7, 0xe1, 0x81, 0x91, 0xab, 0xab, 0xcd, 0x82, 0x75, 0x49, 0x06, 0x58,
+	0x12, 0xbf, 0x23, 0x61, 0xf4, 0xcd, 0x8a, 0x67, 0x09, 0x8d, 0x6c, 0x8a, 0x9d, 0xa9, 0x91, 0xaf,
+	0xab, 0xcd, 0x72, 0xa7, 0x9e, 0x16, 0xfa, 0xf9, 0x72, 0x92, 0x1d, 0x19, 0x77, 0x22, 0x7b, 0x02,
+	0xa0, 0x2b, 0x50, 0x22, 0x7b, 0x6e, 0xd8, 0xed, 0x0f, 0x63, 0x7f, 0x8f, 0x18, 0x05, 0xbe, 0x17,
+	0x60, 0xae, 0xdb, 0xdc, 0x83, 0xae, 0x81, 0x3e, 0x74, 0x7d, 0x4a, 0x8c, 0x62, 0x5d, 0x6d, 0x96,
+	0x3a, 0xd5, 0x96, 0x60, 0xb2, 0x95, 0x30, 0xd9, 0xda, 0xf0, 0xa7, 0x96, 0x08, 0x41, 0x08, 0xb2,
+	0x84, 0xe2, 0xd0, 0x00, 0xde, 0x38, 0xbe, 0x46, 0x55, 0xd0, 0x23, 0xdb, 0x77, 0xb0, 0x51, 0xe2,
+	0x4e, 0x61, 0xa0, 0x5b, 0x50, 0xda, 0x8f, 0x71, 0x34, 0xed, 0x8a, 0xdc, 0xe7, 0x78, 0xee, 0x0b,
+	0x69, 0x03, 0xbf, 0x60, 0xd8, 0x16, 0x83, 0x2c, 0xd8, 0x4f, 0xd7, 0xe8, 0x26, 0x00, 0x19, 0xda,
+	0xd1, 0xa0, 0xeb, 0xfa, 0xbb, 0x81, 0xb1, 0xc6, 0x1f, 0x42, 0xe9, 0x43, 0x3b, 0x0c, 0xba, 0xe7,
+	0xef, 0x06, 0x56, 0x91, 0x24, 0x4b, 0x74, 0x0b, 0xd6, 0xc7, 0x2e, 0x1d, 0x06, 0x31, 0xed, 0x46,
+	0x38, 0xf4, 0xdc, 0xbe, 0xdd, 0xf5, 0x98, 0x18, 0x88, 0x51, 0xae, 0x6b, 0xcd, 0xa2, 0x55, 0x95,
+	0xa8, 0x25, 0x40, 0x2e, 0x14, 0xd2, 0xf8, 0x45, 0x05, 0x98, 0xef, 0x81, 0x37, 0x89, 0xe2, 0xb0,
+	0x3b, 0x72, 0x3d, 0xcf, 0x25, 0x52, 0x93, 0xc0, 0x5c, 0xdb, 0xdc, 0x83, 0xae, 0x42, 0x76, 0x37,
+	0xf6, 0xfb, 0x5c, 0x92, 0xa5, 0x05, 0x21, 0x7c, 0x14, 0xfb, 0x7d, 0x8b, 0x43, 0xe8, 0x3a, 0x14,
+	0x9c, 0x28, 0x88, 0x43, 0xd7, 0x77, 0xb8, 0xb0, 0x4a, 0x9d, 0xf3, 0x69, 0xd8, 0xc7, 0x12, 0xb0,
+	0xd2, 0x10, 0xf4, 0x66, 0xd2, 0x36, 0x9d, 0xc7, 0x96, 0xd3, 0x58, 0x8b, 0x79, 0x65, 0x1b, 0x1b,
+	0x63, 0x28, 0xa6, 0x55, 0xf3, 0x5d, 0xca, 0xee, 0x0c, 0xf0, 0x24, 0xdd, 0xa5, 0xc0, 0x07, 0x78,
+	0x82, 0xae, 0xc2, 0x39, 0x1a, 0x50, 0xdb, 0xeb, 0x72, 0x1f, 0x91, 0x03, 0x54, 0xe2, 0x3e, 0x9e,
+	0x86, 0xa0, 0x32, 0x64, 0x7a, 0x53, 0x43, 0xe3, 0x2a, 0xc8, 0xf4, 0xa6, 0x68, 0x1d, 0x72, 0xb2,
+	0x5d, 0x59, 0xde, 0x2e, 0x69, 0x35, 0x6a, 0x90, 0x65, 0xb5, 0x31, 0xc6, 0x7d, 0x5b, 0x8e, 0x69,
+	0xd1, 0xe2, 0xeb, 0x46, 0x07, 0x0a, 0x49, 0x41, 0x32, 0x9f, 0xba, 0x22, 0x9f, 0xb6, 0x94, 0xef,
+	0x0a, 0xe8, 0xbc, 0x30, 0x16, 0xb0, 0xd4, 0x65, 0x69, 0x35, 0x7e, 0x50, 0xa1, 0x9c, 0x9c, 0x12,
+	0x42, 0xc2, 0xe8, 0x2d, 0xc8, 0x11, 0xee, 0xe1, 0xa1, 0xa5, 0xce, 0x6b, 0xe9, 0x14, 0x88, 0xc0,
+	0x2d, 0xc5, 0x92, 0x01, 0xa8, 0x06, 0xf9, 0xb1, 0x1d, 0xf9, 0xac, 0xf7, 0xac, 0xe8, 0xe2, 0x96,
+	0x62, 0x25, 0x0e, 0xf4, 0x76, 0x22, 0x70, 0xed, 0xbf, 0x05, 0xbe, 0xa5, 0x48, 0x89, 0x6f, 0x16,
+	0x20, 0x17, 0x61, 0x12, 0x7b, 0xb4, 0xf1, 0x5b, 0x06, 0xce, 0x73, 0xb9, 0xdc, 0xb7, 0x47, 0xf3,
+	0xb3, 0xeb, 0x99, 0x93, 0xae, 0x9e, 0x61, 0xd2, 0x33, 0x67, 0x9d, 0xf4, 0x2a, 0xe8, 0x84, 0xda,
+	0x11, 0xe5, 0x75, 0x6a, 0x96, 0x30, 0x50, 0x05, 0x34, 0xec, 0x0f, 0xe4, 0x51, 0xc7, 0x96, 0xf3,
+	0x81, 0xd7, 0x9f, 0x3f, 0xf0, 0x8b, 0x67, 0x6e, 0xee, 0x14, 0x67, 0x6e, 0x23, 0x02, 0xb4, 0xd8,
+	0x3b, 0xc9, 0x68, 0x15, 0x74, 0xa6, 0x20, 0x46, 0x28, 0x13, 0x87, 0x30, 0x50, 0x0d, 0x0a, 0x92,
+	0x2b, 0x26, 0x59, 0x06, 0xa4, 0xf6, 0x7c, 0xb3, 0xda, 0x73, 0x37, 0xdb, 0xf8, 0x3d, 0x23, 0x5f,
+	0xfa, 0xa5, 0xed, 0xc5, 0x73, 0xc6, 0xaa, 0xa0, 0x73, 0x11, 0x4a, 0x0d, 0x0b, 0xe3, 0xd9, 0x3c,
+	0x66, 0xce, 0xc0, 0xa3, 0xf6, 0xc2, 0x78, 0xcc, 0xae, 0xe0, 0x51, 0x5f, 0xc1, 0x63, 0xee, 0x74,
+	0x3c, 0xe6, 0x4f, 0xc3, 0x63, 0x0c, 0x17, 0x96, 0x5a, 0x2a, 0x89, 0x5c, 0x87, 0xdc, 0x77, 0xdc,
+	0x23, 0x99, 0x94, 0xd6, 0x0b, 0xa3, 0x52, 0x7c, 0x33, 0x78, 0xb8, 0x4f, 0x5f, 0x7d, 0x33, 0xbc,
+	0xfa, 0x66, 0x78, 0x39, 0xbe, 0x19, 0x7e, 0xe6, 0x37, 0x94, 0xd0, 0xa4, 0x1c, 0x83, 0x9b, 0x4f,
+	0xdd, 0x50, 0x97, 0x16, 0x6e, 0x28, 0x16, 0x88, 0x07, 0xff, 0xcb, 0x4d, 0x75, 0x17, 0xd6, 0x04,
+	0x31, 0xc9, 0xb0, 0x18, 0x90, 0xef, 0x79, 0x41, 0x7f, 0xef, 0xde, 0x40, 0x1e, 0x7a, 0x89, 0xc9,
+	0x06, 0x94, 0xb3, 0x1a, 0xe1, 0x5d, 0x3e, 0xa0, 0x59, 0x2b, 0xb5, 0x1b, 0x1f, 0x40, 0x39, 0x49,
+	0x23, 0xeb, 0xbb, 0x06, 0x39, 0xa9, 0x01, 0x95, 0x0f, 0x0f, 0x4a, 0xeb, 0x63, 0x6a, 0xe6, 0xc1,
+	0x96, 0x8c, 0xb8, 0xb6, 0x09, 0x59, 0xe6, 0x44, 0x79, 0xd0, 0xac, 0x8d, 0x47, 0x15, 0x05, 0x15,
+	0x41, 0xbf, 0xfd, 0xd9, 0xc3, 0xfb, 0x0f, 0x2a, 0x2a, 0xf3, 0xed, 0x3c, 0xdc, 0xae, 0x64, 0xd8,
+	0x62, 0xfb, 0xde, 0xfd, 0x8a, 0xc6, 0x17, 0x1b, 0x5f, 0x55, 0xb2, 0xa8, 0x04, 0x79, 0x1e, 0x75,
+	0xd7, 0xaa, 0xe8, 0x9d, 0x3f, 0x54, 0xd0, 0x77, 0x18, 0x73, 0xe8, 0x7d, 0xc8, 0x89, 0xd6, 0xa1,
+	0xf5, 0x39, 0x97, 0x8b, 0x7f, 0x22, 0x6a, 0x97, 0x4e, 0xf8, 0xc5, 0xa6, 0x6f, 0xa8, 0xe8, 0x2e,
+	0xc0, 0xfc, 0xf2, 0x41, 0xb5, 0x34, 0xf0, 0xc4, 0x6d, 0x5e, 0x7b, 0x7d, 0x25, 0x26, 0xab, 0xdf,
+	0x82, 0xd2, 0xc2, 0xd9, 0x87, 0x9e, 0x8a, 0x5d, 0xba, 0x64, 0x6a, 0x6f, 0xac, 0x06, 0x45, 0xa6,
+	0xce, 0x9f, 0x2a, 0x00, 0xff, 0x44, 0x5b, 0x28, 0x8e, 0xe9, 0x63, 0xa9, 0xb8, 0x85, 0xd3, 0x6e,
+	0xa9, 0xb8, 0x45, 0xc5, 0xbd, 0x8c, 0xc5, 0x7d, 0x02, 0xc0, 0x95, 0x20, 0x6a, 0xfb, 0x10, 0x72,
+	0xf2, 0x90, 0x98, 0xd7, 0xb6, 0x24, 0xce, 0x85, 0xda, 0x96, 0xd5, 0xd6, 0x54, 0x6f, 0xa8, 0x9b,
+	0x1b, 0x07, 0x47, 0xa6, 0x72, 0x78, 0x64, 0x2a, 0x8f, 0x8f, 0x4c, 0xe5, 0xc9, 0x91, 0xa9, 0x7e,
+	0x3f, 0x33, 0xd5, 0x5f, 0x67, 0xa6, 0x7a, 0x30, 0x33, 0xd5, 0xc3, 0x99, 0xa9, 0xfe, 0x3d, 0x33,
+	0xd5, 0x7f, 0x66, 0xa6, 0xf2, 0x64, 0x66, 0xaa, 0x3f, 0x1e, 0x9b, 0xca, 0xe1, 0xb1, 0xa9, 0x3c,
+	0x3e, 0x36, 0x95, 0xaf, 0x93, 0xbf, 0xb9, 0xbd, 0x1c, 0x1f, 0x97, 0x77, 0xfe, 0x0d, 0x00, 0x00,
+	0xff, 0xff, 0xb0, 0xb7, 0xfb, 0xf1, 0x03, 0x0f, 0x00, 0x00,
 }
 
 func (x Aggr) String() string {
@@ -1562,6 +1645,67 @@ func (this *SelectResponse_Hints) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *ChunksRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ChunksRequest)
+	if !ok {
+		that2, ok := that.(ChunksRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.BlockId != that1.BlockId {
+		return false
+	}
+	if len(this.Chunkref) != len(that1.Chunkref) {
+		return false
+	}
+	for i := range this.Chunkref {
+		if this.Chunkref[i] != that1.Chunkref[i] {
+			return false
+		}
+	}
+	return true
+}
+func (this *ChunksResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ChunksResponse)
+	if !ok {
+		that2, ok := that.(ChunksResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Chunks) != len(that1.Chunks) {
+		return false
+	}
+	for i := range this.Chunks {
+		if !this.Chunks[i].Equal(that1.Chunks[i]) {
+			return false
+		}
+	}
+	return true
+}
 func (this *SeriesRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -1571,7 +1715,7 @@ func (this *SeriesRequest) GoString() string {
 	s = append(s, "MinTime: "+fmt.Sprintf("%#v", this.MinTime)+",\n")
 	s = append(s, "MaxTime: "+fmt.Sprintf("%#v", this.MaxTime)+",\n")
 	if this.Matchers != nil {
-		vs := make([]*LabelMatcher, len(this.Matchers))
+		vs := make([]*typespb.LabelMatcher, len(this.Matchers))
 		for i := range vs {
 			vs[i] = &this.Matchers[i]
 		}
@@ -1710,7 +1854,7 @@ func (this *LabelNamesRequest) GoString() string {
 		s = append(s, "Hints: "+fmt.Sprintf("%#v", this.Hints)+",\n")
 	}
 	if this.Matchers != nil {
-		vs := make([]*LabelMatcher, len(this.Matchers))
+		vs := make([]*typespb.LabelMatcher, len(this.Matchers))
 		for i := range vs {
 			vs[i] = &this.Matchers[i]
 		}
@@ -1748,7 +1892,7 @@ func (this *LabelValuesRequest) GoString() string {
 		s = append(s, "Hints: "+fmt.Sprintf("%#v", this.Hints)+",\n")
 	}
 	if this.Matchers != nil {
-		vs := make([]*LabelMatcher, len(this.Matchers))
+		vs := make([]*typespb.LabelMatcher, len(this.Matchers))
 		for i := range vs {
 			vs[i] = &this.Matchers[i]
 		}
@@ -1780,7 +1924,7 @@ func (this *SelectRequest) GoString() string {
 	s = append(s, "MinTime: "+fmt.Sprintf("%#v", this.MinTime)+",\n")
 	s = append(s, "MaxTime: "+fmt.Sprintf("%#v", this.MaxTime)+",\n")
 	if this.Matchers != nil {
-		vs := make([]*LabelMatcher, len(this.Matchers))
+		vs := make([]*typespb.LabelMatcher, len(this.Matchers))
 		for i := range vs {
 			vs[i] = &this.Matchers[i]
 		}
@@ -1841,6 +1985,29 @@ func (this *SelectResponse_Hints) GoString() string {
 	s := strings.Join([]string{`&storepb.SelectResponse_Hints{` +
 		`Hints:` + fmt.Sprintf("%#v", this.Hints) + `}`}, ", ")
 	return s
+}
+func (this *ChunksRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&storepb.ChunksRequest{")
+	s = append(s, "BlockId: "+fmt.Sprintf("%#v", this.BlockId)+",\n")
+	s = append(s, "Chunkref: "+fmt.Sprintf("%#v", this.Chunkref)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ChunksResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&storepb.ChunksResponse{")
+	if this.Chunks != nil {
+		s = append(s, "Chunks: "+fmt.Sprintf("%#v", this.Chunks)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
 }
 func valueToGoStringRpc(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
@@ -2226,6 +2393,110 @@ var _IndexStore_serviceDesc = grpc.ServiceDesc{
 			StreamName:    "Select",
 			Handler:       _IndexStore_Select_Handler,
 			ServerStreams: true,
+		},
+	},
+	Metadata: "rpc.proto",
+}
+
+// ChunkStoreClient is the client API for ChunkStore service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type ChunkStoreClient interface {
+	Chunks(ctx context.Context, opts ...grpc.CallOption) (ChunkStore_ChunksClient, error)
+}
+
+type chunkStoreClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewChunkStoreClient(cc *grpc.ClientConn) ChunkStoreClient {
+	return &chunkStoreClient{cc}
+}
+
+func (c *chunkStoreClient) Chunks(ctx context.Context, opts ...grpc.CallOption) (ChunkStore_ChunksClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_ChunkStore_serviceDesc.Streams[0], "/storepb.ChunkStore/Chunks", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &chunkStoreChunksClient{stream}
+	return x, nil
+}
+
+type ChunkStore_ChunksClient interface {
+	Send(*ChunksRequest) error
+	Recv() (*ChunksResponse, error)
+	grpc.ClientStream
+}
+
+type chunkStoreChunksClient struct {
+	grpc.ClientStream
+}
+
+func (x *chunkStoreChunksClient) Send(m *ChunksRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *chunkStoreChunksClient) Recv() (*ChunksResponse, error) {
+	m := new(ChunksResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// ChunkStoreServer is the server API for ChunkStore service.
+type ChunkStoreServer interface {
+	Chunks(ChunkStore_ChunksServer) error
+}
+
+// UnimplementedChunkStoreServer can be embedded to have forward compatible implementations.
+type UnimplementedChunkStoreServer struct {
+}
+
+func (*UnimplementedChunkStoreServer) Chunks(srv ChunkStore_ChunksServer) error {
+	return status.Errorf(codes.Unimplemented, "method Chunks not implemented")
+}
+
+func RegisterChunkStoreServer(s *grpc.Server, srv ChunkStoreServer) {
+	s.RegisterService(&_ChunkStore_serviceDesc, srv)
+}
+
+func _ChunkStore_Chunks_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ChunkStoreServer).Chunks(&chunkStoreChunksServer{stream})
+}
+
+type ChunkStore_ChunksServer interface {
+	Send(*ChunksResponse) error
+	Recv() (*ChunksRequest, error)
+	grpc.ServerStream
+}
+
+type chunkStoreChunksServer struct {
+	grpc.ServerStream
+}
+
+func (x *chunkStoreChunksServer) Send(m *ChunksResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *chunkStoreChunksServer) Recv() (*ChunksRequest, error) {
+	m := new(ChunksRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+var _ChunkStore_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "storepb.ChunkStore",
+	HandlerType: (*ChunkStoreServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Chunks",
+			Handler:       _ChunkStore_Chunks_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "rpc.proto",
@@ -3178,6 +3449,91 @@ func (m *SelectResponse_Hints) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	return len(dAtA) - i, nil
 }
+func (m *ChunksRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ChunksRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ChunksRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Chunkref) > 0 {
+		dAtA23 := make([]byte, len(m.Chunkref)*10)
+		var j22 int
+		for _, num := range m.Chunkref {
+			for num >= 1<<7 {
+				dAtA23[j22] = uint8(uint64(num)&0x7f | 0x80)
+				num >>= 7
+				j22++
+			}
+			dAtA23[j22] = uint8(num)
+			j22++
+		}
+		i -= j22
+		copy(dAtA[i:], dAtA23[:j22])
+		i = encodeVarintRpc(dAtA, i, uint64(j22))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.BlockId) > 0 {
+		i -= len(m.BlockId)
+		copy(dAtA[i:], m.BlockId)
+		i = encodeVarintRpc(dAtA, i, uint64(len(m.BlockId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ChunksResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ChunksResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ChunksResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Chunks) > 0 {
+		for iNdEx := len(m.Chunks) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Chunks[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintRpc(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintRpc(dAtA []byte, offset int, v uint64) int {
 	offset -= sovRpc(v)
 	base := offset
@@ -3616,6 +3972,40 @@ func (m *SelectResponse_Hints) Size() (n int) {
 	}
 	return n
 }
+func (m *ChunksRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.BlockId)
+	if l > 0 {
+		n += 1 + l + sovRpc(uint64(l))
+	}
+	if len(m.Chunkref) > 0 {
+		l = 0
+		for _, e := range m.Chunkref {
+			l += sovRpc(uint64(e))
+		}
+		n += 1 + sovRpc(uint64(l)) + l
+	}
+	return n
+}
+
+func (m *ChunksResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Chunks) > 0 {
+		for _, e := range m.Chunks {
+			l = e.Size()
+			n += 1 + l + sovRpc(uint64(l))
+		}
+	}
+	return n
+}
 
 func sovRpc(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
@@ -3723,7 +4113,7 @@ func (this *SeriesResponse_Series) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&SeriesResponse_Series{`,
-		`Series:` + strings.Replace(fmt.Sprintf("%v", this.Series), "Series", "Series", 1) + `,`,
+		`Series:` + strings.Replace(fmt.Sprintf("%v", this.Series), "Series", "typespb.Series", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3856,7 +4246,7 @@ func (this *SelectResponse_Series) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&SelectResponse_Series{`,
-		`Series:` + strings.Replace(fmt.Sprintf("%v", this.Series), "SelectedSeries", "SelectedSeries", 1) + `,`,
+		`Series:` + strings.Replace(fmt.Sprintf("%v", this.Series), "SelectedSeries", "typespb.SelectedSeries", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3877,6 +4267,32 @@ func (this *SelectResponse_Hints) String() string {
 	}
 	s := strings.Join([]string{`&SelectResponse_Hints{`,
 		`Hints:` + strings.Replace(fmt.Sprintf("%v", this.Hints), "Any", "types.Any", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ChunksRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ChunksRequest{`,
+		`BlockId:` + fmt.Sprintf("%v", this.BlockId) + `,`,
+		`Chunkref:` + fmt.Sprintf("%v", this.Chunkref) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ChunksResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForChunks := "[]*AggrChunk{"
+	for _, f := range this.Chunks {
+		repeatedStringForChunks += strings.Replace(fmt.Sprintf("%v", f), "AggrChunk", "typespb.AggrChunk", 1) + ","
+	}
+	repeatedStringForChunks += "}"
+	s := strings.Join([]string{`&ChunksResponse{`,
+		`Chunks:` + repeatedStringForChunks + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3985,7 +4401,7 @@ func (m *SeriesRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Matchers = append(m.Matchers, LabelMatcher{})
+			m.Matchers = append(m.Matchers, typespb.LabelMatcher{})
 			if err := m.Matchers[len(m.Matchers)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -4112,7 +4528,7 @@ func (m *SeriesRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PartialResponseStrategy |= PartialResponseStrategy(b&0x7F) << shift
+				m.PartialResponseStrategy |= typespb.PartialResponseStrategy(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -4982,7 +5398,7 @@ func (m *SeriesResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &Series{}
+			v := &typespb.Series{}
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -5142,7 +5558,7 @@ func (m *LabelNamesRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PartialResponseStrategy |= PartialResponseStrategy(b&0x7F) << shift
+				m.PartialResponseStrategy |= typespb.PartialResponseStrategy(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -5250,7 +5666,7 @@ func (m *LabelNamesRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Matchers = append(m.Matchers, LabelMatcher{})
+			m.Matchers = append(m.Matchers, typespb.LabelMatcher{})
 			if err := m.Matchers[len(m.Matchers)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -5527,7 +5943,7 @@ func (m *LabelValuesRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PartialResponseStrategy |= PartialResponseStrategy(b&0x7F) << shift
+				m.PartialResponseStrategy |= typespb.PartialResponseStrategy(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -5635,7 +6051,7 @@ func (m *LabelValuesRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Matchers = append(m.Matchers, LabelMatcher{})
+			m.Matchers = append(m.Matchers, typespb.LabelMatcher{})
 			if err := m.Matchers[len(m.Matchers)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -5913,7 +6329,7 @@ func (m *SelectRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Matchers = append(m.Matchers, LabelMatcher{})
+			m.Matchers = append(m.Matchers, typespb.LabelMatcher{})
 			if err := m.Matchers[len(m.Matchers)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -6040,7 +6456,7 @@ func (m *SelectRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.PartialResponseStrategy |= PartialResponseStrategy(b&0x7F) << shift
+				m.PartialResponseStrategy |= typespb.PartialResponseStrategy(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -6325,7 +6741,7 @@ func (m *SelectResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &SelectedSeries{}
+			v := &typespb.SelectedSeries{}
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -6397,6 +6813,254 @@ func (m *SelectResponse) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			m.Result = &SelectResponse_Hints{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpc(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ChunksRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ChunksRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ChunksRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.BlockId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType == 0 {
+				var v uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowRpc
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.Chunkref = append(m.Chunkref, v)
+			} else if wireType == 2 {
+				var packedLen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowRpc
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					packedLen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if packedLen < 0 {
+					return ErrInvalidLengthRpc
+				}
+				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthRpc
+				}
+				if postIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				var elementCount int
+				var count int
+				for _, integer := range dAtA[iNdEx:postIndex] {
+					if integer < 128 {
+						count++
+					}
+				}
+				elementCount = count
+				if elementCount != 0 && len(m.Chunkref) == 0 {
+					m.Chunkref = make([]uint64, 0, elementCount)
+				}
+				for iNdEx < postIndex {
+					var v uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowRpc
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					m.Chunkref = append(m.Chunkref, v)
+				}
+			} else {
+				return fmt.Errorf("proto: wrong wireType = %d for field Chunkref", wireType)
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpc(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ChunksResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpc
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ChunksResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ChunksResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Chunks", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpc
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpc
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRpc
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Chunks = append(m.Chunks, &typespb.AggrChunk{})
+			if err := m.Chunks[len(m.Chunks)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

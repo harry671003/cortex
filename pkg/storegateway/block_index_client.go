@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/cortexproject/cortex/pkg/storegateway/storepb"
+	"github.com/cortexproject/cortex/pkg/storegateway/typespb"
 	"github.com/go-kit/log"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -232,11 +233,16 @@ OUTER:
 
 		// Schedule loading chunks.
 		s.refs = make([]chunks.ChunkRef, 0, len(b.chkMetas))
-		s.chks = make([]storepb.AggrChunk, 0, len(b.chkMetas))
+		s.chks = make([]typespb.AggrChunk, 0, len(b.chkMetas))
 
 		for _, meta := range b.chkMetas {
+			s.meta = append(s.meta, &typespb.ChunkMeta{
+				Mint: meta.MinTime,
+				Maxt: meta.MaxTime,
+				Ref:  uint64(meta.Ref),
+			})
 			s.refs = append(s.refs, meta.Ref)
-			s.chks = append(s.chks, storepb.AggrChunk{
+			s.chks = append(s.chks, typespb.AggrChunk{
 				MinTime: meta.MinTime,
 				MaxTime: meta.MaxTime,
 			})

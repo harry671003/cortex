@@ -2,9 +2,9 @@
 // Licensed under the Apache License 2.0.
 
 syntax = "proto3";
-package storepb;
+package typespb;
 
-option go_package = "storepb";
+option go_package = "typespb";
 
 import "gogoproto/gogo.proto";
 import "github.com/thanos-io/thanos/pkg/store/labelpb/types.proto";
@@ -84,5 +84,5 @@ message SelectedSeries {
 message ChunkMeta {
   int64 mint = 1;
   int64 maxt = 2;
-  int64 ref = 3;
+  uint64 ref = 3;
 }

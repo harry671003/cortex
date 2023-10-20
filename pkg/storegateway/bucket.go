@@ -61,6 +61,7 @@ import (
 
 	"github.com/cortexproject/cortex/pkg/storegateway/hintspb"
 	"github.com/cortexproject/cortex/pkg/storegateway/storepb"
+	"github.com/cortexproject/cortex/pkg/storegateway/typespb"
 )
 
 const (
@@ -923,7 +924,7 @@ func (s *BucketStore) limitMaxTime(maxt int64) int64 {
 	return maxt
 }
 
-func populateChunk(out *storepb.AggrChunk, in chunkenc.Chunk, aggrs []storepb.Aggr, save func([]byte) ([]byte, error), calculateChecksum bool) error {
+func populateChunk(out *typespb.AggrChunk, in chunkenc.Chunk, aggrs []storepb.Aggr, save func([]byte) ([]byte, error), calculateChecksum bool) error {
 	hasher := hashPool.Get().(hash.Hash64)
 	defer hashPool.Put(hasher)
 
@@ -932,9 +933,9 @@ func populateChunk(out *storepb.AggrChunk, in chunkenc.Chunk, aggrs []storepb.Ag
 		if err != nil {
 			return err
 		}
-		out.Raw = &storepb.Chunk{
+		out.Raw = &typespb.Chunk{
 			Data: b,
-			Type: storepb.Chunk_Encoding(in.Encoding() - 1),
+			Type: typespb.Chunk_Encoding(in.Encoding() - 1),
 			Hash: hashChunk(hasher, b, calculateChecksum),
 		}
 		return nil
@@ -957,7 +958,7 @@ func populateChunk(out *storepb.AggrChunk, in chunkenc.Chunk, aggrs []storepb.Ag
 			if err != nil {
 				return err
 			}
-			out.Count = &storepb.Chunk{Type: storepb.XOR, Data: b, Hash: hashChunk(hasher, b, calculateChecksum)}
+			out.Count = &typespb.Chunk{Type: typespb.XOR, Data: b, Hash: hashChunk(hasher, b, calculateChecksum)}
 		case storepb.SUM:
 			x, err := ac.Get(downsample.AggrSum)
 			if err != nil {
@@ -967,7 +968,7 @@ func populateChunk(out *storepb.AggrChunk, in chunkenc.Chunk, aggrs []storepb.Ag
 			if err != nil {
 				return err
 			}
-			out.Sum = &storepb.Chunk{Type: storepb.XOR, Data: b, Hash: hashChunk(hasher, b, calculateChecksum)}
+			out.Sum = &typespb.Chunk{Type: typespb.XOR, Data: b, Hash: hashChunk(hasher, b, calculateChecksum)}
 		case storepb.MIN:
 			x, err := ac.Get(downsample.AggrMin)
 			if err != nil {
@@ -977,7 +978,7 @@ func populateChunk(out *storepb.AggrChunk, in chunkenc.Chunk, aggrs []storepb.Ag
 			if err != nil {
 				return err
 			}
-			out.Min = &storepb.Chunk{Type: storepb.XOR, Data: b, Hash: hashChunk(hasher, b, calculateChecksum)}
+			out.Min = &typespb.Chunk{Type: typespb.XOR, Data: b, Hash: hashChunk(hasher, b, calculateChecksum)}
 		case storepb.MAX:
 			x, err := ac.Get(downsample.AggrMax)
 			if err != nil {
@@ -987,7 +988,7 @@ func populateChunk(out *storepb.AggrChunk, in chunkenc.Chunk, aggrs []storepb.Ag
 			if err != nil {
 				return err
 			}
-			out.Max = &storepb.Chunk{Type: storepb.XOR, Data: b, Hash: hashChunk(hasher, b, calculateChecksum)}
+			out.Max = &typespb.Chunk{Type: typespb.XOR, Data: b, Hash: hashChunk(hasher, b, calculateChecksum)}
 		case storepb.COUNTER:
 			x, err := ac.Get(downsample.AggrCounter)
 			if err != nil {
@@ -997,7 +998,7 @@ func populateChunk(out *storepb.AggrChunk, in chunkenc.Chunk, aggrs []storepb.Ag
 			if err != nil {
 				return err
 			}
-			out.Counter = &storepb.Chunk{Type: storepb.XOR, Data: b, Hash: hashChunk(hasher, b, calculateChecksum)}
+			out.Counter = &typespb.Chunk{Type: typespb.XOR, Data: b, Hash: hashChunk(hasher, b, calculateChecksum)}
 		}
 	}
 	return nil
@@ -1065,7 +1066,7 @@ func (s *BucketStore) Series(req *storepb.SeriesRequest, seriesSrv storepb.Store
 
 	tenant, _ := tenancy.GetTenantFromGRPCMetadata(srv.Context())
 
-	matchers, err := storepb.MatchersToPromMatchers(req.Matchers...)
+	matchers, err := typespb.MatchersToPromMatchers(req.Matchers...)
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -1094,7 +1095,7 @@ func (s *BucketStore) Series(req *storepb.SeriesRequest, seriesSrv storepb.Store
 		}
 		queryStatsEnabled = reqHints.EnableQueryStats
 
-		reqBlockMatchers, err = storepb.MatchersToPromMatchers(reqHints.BlockMatchers...)
+		reqBlockMatchers, err = typespb.MatchersToPromMatchers(reqHints.BlockMatchers...)
 		if err != nil {
 			return status.Error(codes.InvalidArgument, errors.Wrap(err, "translate request hints labels matchers").Error())
 		}
@@ -1338,7 +1339,188 @@ func (s *BucketStore) Series(req *storepb.SeriesRequest, seriesSrv storepb.Store
 	return srv.Flush()
 }
 
-func chunksSize(chks []storepb.AggrChunk) (size int) {
+func (s *BucketStore) Select(req *storepb.SelectRequest, srv storepb.IndexStore_SelectServer) (err error) {
+	if s.queryGate != nil {
+		tracing.DoInSpan(srv.Context(), "store_query_gate_ismyturn", func(ctx context.Context) {
+			err = s.queryGate.Start(srv.Context())
+		})
+		if err != nil {
+			return errors.Wrapf(err, "failed to wait for turn")
+		}
+
+		defer s.queryGate.Done()
+	}
+
+	tenant, _ := tenancy.GetTenantFromGRPCMetadata(srv.Context())
+
+	matchers, err := typespb.MatchersToPromMatchers(req.Matchers...)
+	if err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+	req.MinTime = s.limitMinTime(req.MinTime)
+	req.MaxTime = s.limitMaxTime(req.MaxTime)
+
+	var (
+		bytesLimiter     = s.bytesLimiterFactory(s.metrics.queriesDropped.WithLabelValues("bytes", tenant))
+		stats            = &queryStats{}
+		mtx              sync.Mutex
+		resHints         = &hintspb.SeriesResponseHints{}
+		reqBlockMatchers []*labels.Matcher
+		seriesLimiter    = s.seriesLimiterFactory(s.metrics.queriesDropped.WithLabelValues("series", tenant))
+	)
+
+	if req.Hints != nil {
+		reqHints := &hintspb.SeriesRequestHints{}
+		if err := types.UnmarshalAny(req.Hints, reqHints); err != nil {
+			return status.Error(codes.InvalidArgument, errors.Wrap(err, "unmarshal series request hints").Error())
+		}
+
+		reqBlockMatchers, err = typespb.MatchersToPromMatchers(reqHints.BlockMatchers...)
+		if err != nil {
+			return status.Error(codes.InvalidArgument, errors.Wrap(err, "translate request hints labels matchers").Error())
+		}
+	}
+
+	var extLsetToRemove map[string]struct{}
+	if len(req.WithoutReplicaLabels) > 0 {
+		extLsetToRemove = make(map[string]struct{})
+		for _, l := range req.WithoutReplicaLabels {
+			extLsetToRemove[l] = struct{}{}
+		}
+	}
+
+	s.mtx.RLock()
+	for _, bs := range s.blockSets {
+		blockMatchers, ok := bs.labelMatchers(matchers...)
+		if !ok {
+			continue
+		}
+		// Sort matchers to make sure we generate the same cache key
+		// when fetching expanded postings.
+		sortedBlockMatchers := newSortedMatchers(blockMatchers)
+
+		blocks := bs.getFor(req.MinTime, req.MaxTime, req.MaxResolutionWindow, reqBlockMatchers)
+
+		if s.debugLogging {
+			debugFoundBlockSetOverview(s.logger, req.MinTime, req.MaxTime, req.MaxResolutionWindow, bs.labels, blocks)
+		}
+
+		// There should be only one block.
+		if len(blocks) > 1 {
+			return status.Error(codes.Internal, errors.Wrap(err, "too many blocks queried").Error())
+		}
+
+		stats.blocksQueried = len(blocks)
+
+		for _, b := range blocks {
+			blk := b
+
+			if s.enableSeriesResponseHints {
+				// Keep track of queried blocks.
+				resHints.AddQueriedBlock(blk.meta.ULID)
+			}
+
+			shardMatcher := req.ShardInfo.Matcher(&s.buffers)
+
+			blockClient := newBlockIndexClient(
+				srv.Context(),
+				s.logger,
+				blk,
+				blockIndexRequest{
+					maxTime:    req.MaxTime,
+					minTime:    req.MinTime,
+					skipChunks: req.SkipChunks,
+				},
+				bytesLimiter,
+				sortedBlockMatchers,
+				shardMatcher,
+				s.seriesBatchSize,
+				s.metrics.seriesFetchDurationSum,
+				extLsetToRemove,
+				s.enabledLazyExpandedPostings,
+				s.metrics.lazyExpandedPostingsCount,
+				s.metrics.lazyExpandedPostingSizeBytes,
+				s.metrics.lazyExpandedPostingSeriesOverfetchedSizeBytes,
+				tenant,
+			)
+
+			defer blockClient.Close()
+
+			span, _ := tracing.StartSpan(blockClient.ctx, "bucket_store_block_series", tracing.Tags{
+				"block.id":         blk.meta.ULID,
+				"block.mint":       blk.meta.MinTime,
+				"block.maxt":       blk.meta.MaxTime,
+				"block.resolution": blk.meta.Thanos.Downsample.Resolution,
+			})
+
+			onClose := func() {
+				mtx.Lock()
+				stats = blockClient.MergeStats(stats)
+				mtx.Unlock()
+			}
+
+			if err := blockClient.ExpandPostings(
+				sortedBlockMatchers,
+				seriesLimiter,
+			); err != nil {
+				onClose()
+				span.Finish()
+				return errors.Wrapf(err, "fetch postings for block %s", blk.meta.ULID)
+			}
+
+			for blockClient.hasNext() {
+				entries, err := blockClient.nextBatch(tenant)
+				if err != nil {
+					return err
+				}
+
+				for _, e := range entries {
+					srv.Send(storepb.NewSelectResponse(&typespb.SelectedSeries{
+						BlockId: b.meta.ULID.String(),
+						Labels:  labelpb.ZLabelsFromPromLabels(e.lset),
+						Chunks:  e.meta,
+					}))
+				}
+			}
+
+		}
+	}
+
+	s.mtx.RUnlock()
+
+	defer func() {
+		s.metrics.seriesDataTouched.WithLabelValues("postings", tenant).Observe(float64(stats.postingsTouched))
+		s.metrics.seriesDataFetched.WithLabelValues("postings", tenant).Observe(float64(stats.postingsFetched))
+		s.metrics.seriesDataSizeTouched.WithLabelValues("postings", tenant).Observe(float64(stats.PostingsTouchedSizeSum))
+		s.metrics.seriesDataSizeFetched.WithLabelValues("postings", tenant).Observe(float64(stats.PostingsFetchedSizeSum))
+		s.metrics.seriesDataTouched.WithLabelValues("series", tenant).Observe(float64(stats.seriesTouched))
+		s.metrics.seriesDataFetched.WithLabelValues("series", tenant).Observe(float64(stats.seriesFetched))
+		s.metrics.seriesDataSizeTouched.WithLabelValues("series", tenant).Observe(float64(stats.SeriesTouchedSizeSum))
+		s.metrics.seriesDataSizeFetched.WithLabelValues("series", tenant).Observe(float64(stats.SeriesFetchedSizeSum))
+		s.metrics.seriesDataTouched.WithLabelValues("chunks", tenant).Observe(float64(stats.chunksTouched))
+		s.metrics.seriesDataFetched.WithLabelValues("chunks", tenant).Observe(float64(stats.chunksFetched))
+		s.metrics.seriesDataSizeTouched.WithLabelValues("chunks", tenant).Observe(float64(stats.ChunksTouchedSizeSum))
+		s.metrics.seriesDataSizeFetched.WithLabelValues("chunks", tenant).Observe(float64(stats.ChunksFetchedSizeSum))
+		s.metrics.resultSeriesCount.WithLabelValues(tenant).Observe(float64(stats.mergedSeriesCount))
+		s.metrics.cachedPostingsCompressions.WithLabelValues(labelEncode, tenant).Add(float64(stats.cachedPostingsCompressions))
+		s.metrics.cachedPostingsCompressions.WithLabelValues(labelDecode, tenant).Add(float64(stats.cachedPostingsDecompressions))
+		s.metrics.cachedPostingsCompressionErrors.WithLabelValues(labelEncode, tenant).Add(float64(stats.cachedPostingsCompressionErrors))
+		s.metrics.cachedPostingsCompressionErrors.WithLabelValues(labelDecode, tenant).Add(float64(stats.cachedPostingsDecompressionErrors))
+		s.metrics.cachedPostingsCompressionTimeSeconds.WithLabelValues(labelEncode, tenant).Add(stats.CachedPostingsCompressionTimeSum.Seconds())
+		s.metrics.cachedPostingsCompressionTimeSeconds.WithLabelValues(labelDecode, tenant).Add(stats.CachedPostingsDecompressionTimeSum.Seconds())
+		s.metrics.cachedPostingsOriginalSizeBytes.WithLabelValues(tenant).Add(float64(stats.CachedPostingsOriginalSizeSum))
+		s.metrics.cachedPostingsCompressedSizeBytes.WithLabelValues(tenant).Add(float64(stats.CachedPostingsCompressedSizeSum))
+		s.metrics.postingsSizeBytes.WithLabelValues(tenant).Observe(float64(int(stats.PostingsFetchedSizeSum) + int(stats.PostingsTouchedSizeSum)))
+
+		level.Debug(s.logger).Log("msg", "stats query processed",
+			"request", req,
+			"tenant", tenant,
+			"stats", fmt.Sprintf("%+v", stats), "err", err)
+	}()
+	return nil
+}
+
+func chunksSize(chks []typespb.AggrChunk) (size int) {
 	for _, chk := range chks {
 		size += chk.Size() // This gets the encoded proto size.
 	}
@@ -1347,7 +1529,7 @@ func chunksSize(chks []storepb.AggrChunk) (size int) {
 
 // LabelNames implements the storepb.StoreServer interface.
 func (s *BucketStore) LabelNames(ctx context.Context, req *storepb.LabelNamesRequest) (*storepb.LabelNamesResponse, error) {
-	reqSeriesMatchers, err := storepb.MatchersToPromMatchers(req.Matchers...)
+	reqSeriesMatchers, err := typespb.MatchersToPromMatchers(req.Matchers...)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, errors.Wrap(err, "translate request labels matchers").Error())
 	}
@@ -1364,7 +1546,7 @@ func (s *BucketStore) LabelNames(ctx context.Context, req *storepb.LabelNamesReq
 			return nil, status.Error(codes.InvalidArgument, errors.Wrap(err, "unmarshal label names request hints").Error())
 		}
 
-		reqBlockMatchers, err = storepb.MatchersToPromMatchers(reqHints.BlockMatchers...)
+		reqBlockMatchers, err = typespb.MatchersToPromMatchers(reqHints.BlockMatchers...)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, errors.Wrap(err, "translate request hints labels matchers").Error())
 		}
@@ -1547,7 +1729,7 @@ func (b *bucketBlock) FilterExtLabelsMatchers(matchers []*labels.Matcher) ([]*la
 
 // LabelValues implements the storepb.StoreServer interface.
 func (s *BucketStore) LabelValues(ctx context.Context, req *storepb.LabelValuesRequest) (*storepb.LabelValuesResponse, error) {
-	reqSeriesMatchers, err := storepb.MatchersToPromMatchers(req.Matchers...)
+	reqSeriesMatchers, err := typespb.MatchersToPromMatchers(req.Matchers...)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, errors.Wrap(err, "translate request labels matchers").Error())
 	}
@@ -1566,7 +1748,7 @@ func (s *BucketStore) LabelValues(ctx context.Context, req *storepb.LabelValuesR
 			return nil, status.Error(codes.InvalidArgument, errors.Wrap(err, "unmarshal label values request hints").Error())
 		}
 
-		reqBlockMatchers, err = storepb.MatchersToPromMatchers(reqHints.BlockMatchers...)
+		reqBlockMatchers, err = typespb.MatchersToPromMatchers(reqHints.BlockMatchers...)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, errors.Wrap(err, "translate request hints labels matchers").Error())
 		}

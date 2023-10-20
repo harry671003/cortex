@@ -361,7 +361,7 @@ func (a *API) RegisterRing(r *ring.Ring) {
 
 // RegisterStoreGateway registers the ring UI page associated with the store-gateway.
 func (a *API) RegisterStoreGateway(s *storegateway.StoreGateway) {
-	storegatewaypb.RegisterStoreGatewayServer(a.server.GRPC, s)
+	storegatewaypb.RegisterIndexGatewayServer(a.server.GRPC, s)
 
 	a.indexPage.AddLink(SectionAdminEndpoints, "/store-gateway/ring", "Store Gateway Ring")
 	a.RegisterRoute("/store-gateway/ring", http.HandlerFunc(s.RingHandler), false, "GET", "POST")

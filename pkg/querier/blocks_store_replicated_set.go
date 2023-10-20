@@ -103,7 +103,7 @@ func (s *blocksStoreReplicationSet) stopping(_ error) error {
 	return services.StopManagerAndAwaitStopped(context.Background(), s.subservices)
 }
 
-func (s *blocksStoreReplicationSet) GetClientsFor(userID string, blockIDs []ulid.ULID, exclude map[ulid.ULID][]string, attemptedBlocksZones map[ulid.ULID]map[string]int) (map[BlocksStoreClient][]ulid.ULID, error) {
+func (s *blocksStoreReplicationSet) GetClientsFor(userID string, blockIDs []ulid.ULID, exclude map[ulid.ULID][]string, attemptedBlocksZones map[ulid.ULID]map[string]int) (map[ulid.ULID]BlocksStoreClient, error) {
 	shards := map[string][]ulid.ULID{}
 
 	// If shuffle sharding is enabled, we should build a subring for the user,
@@ -142,7 +142,7 @@ func (s *blocksStoreReplicationSet) GetClientsFor(userID string, blockIDs []ulid
 		}
 	}
 
-	clients := map[BlocksStoreClient][]ulid.ULID{}
+	clients := map[ulid.ULID]BlocksStoreClient{}
 
 	// Get the client for each store-gateway.
 	for addr, blockIDs := range shards {
@@ -151,7 +151,9 @@ func (s *blocksStoreReplicationSet) GetClientsFor(userID string, blockIDs []ulid
 			return nil, errors.Wrapf(err, "failed to get store-gateway client for %s", addr)
 		}
 
-		clients[c.(BlocksStoreClient)] = blockIDs
+		for _, bid := range blockIDs {
+			clients[bid] = c.(BlocksStoreClient)
+		}
 	}
 
 	return clients, nil

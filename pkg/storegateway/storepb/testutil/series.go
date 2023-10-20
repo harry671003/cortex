@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/cespare/xxhash"
+	"github.com/cortexproject/cortex/pkg/storegateway/typespb"
 	"github.com/efficientgo/core/testutil"
 	"github.com/go-kit/log"
 	"github.com/gogo/protobuf/types"
@@ -77,7 +78,7 @@ func CreateBlockFromHead(t testing.TB, dir string, head *tsdb.Head) ulid.ULID {
 // Returned series list has "ext1"="1" prepended. Each series looks as follows:
 // {foo=bar,i=000001aaaaaaaaaabbbbbbbbbbccccccccccdddddddddd} <random value> where number indicate sample number from 0.
 // Returned series are framed in the same way as remote read would frame them.
-func CreateHeadWithSeries(t testing.TB, j int, opts HeadGenOptions) (*tsdb.Head, []*storepb.Series) {
+func CreateHeadWithSeries(t testing.TB, j int, opts HeadGenOptions) (*tsdb.Head, []*typespb.Series) {
 	if opts.SamplesPerSeries < 1 || opts.Series < 1 {
 		t.Fatal("samples and series has to be 1 or more")
 	}
@@ -127,7 +128,7 @@ func CreateHeadWithSeries(t testing.TB, j int, opts HeadGenOptions) (*tsdb.Head,
 	return h, ReadSeriesFromBlock(t, h, opts.PrependLabels, opts.SkipChunks)
 }
 
-func ReadSeriesFromBlock(t testing.TB, h tsdb.BlockReader, extLabels labels.Labels, skipChunks bool) []*storepb.Series {
+func ReadSeriesFromBlock(t testing.TB, h tsdb.BlockReader, extLabels labels.Labels, skipChunks bool) []*typespb.Series {
 	// Use TSDB and get all series for assertion.
 	chks, err := h.Chunks()
 	testutil.Ok(t, err)
@@ -140,7 +141,7 @@ func ReadSeriesFromBlock(t testing.TB, h tsdb.BlockReader, extLabels labels.Labe
 	var (
 		lset       labels.Labels
 		chunkMetas []chunks.Meta
-		expected   = make([]*storepb.Series, 0)
+		expected   = make([]*typespb.Series, 0)
 	)
 
 	var builder labels.ScratchBuilder
@@ -149,7 +150,7 @@ func ReadSeriesFromBlock(t testing.TB, h tsdb.BlockReader, extLabels labels.Labe
 	for all.Next() {
 		testutil.Ok(t, ir.Series(all.At(), &builder, &chunkMetas))
 		lset = builder.Labels()
-		expected = append(expected, &storepb.Series{Labels: labelpb.ZLabelsFromPromLabels(append(extLabels.Copy(), lset...))})
+		expected = append(expected, &typespb.Series{Labels: labelpb.ZLabelsFromPromLabels(append(extLabels.Copy(), lset...))})
 
 		if skipChunks {
 			continue
@@ -164,12 +165,12 @@ func ReadSeriesFromBlock(t testing.TB, h tsdb.BlockReader, extLabels labels.Labe
 				c.MaxTime = c.MinTime + int64(chEnc.NumSamples()) - 1
 			}
 
-			expected[len(expected)-1].Chunks = append(expected[len(expected)-1].Chunks, storepb.AggrChunk{
+			expected[len(expected)-1].Chunks = append(expected[len(expected)-1].Chunks, typespb.AggrChunk{
 				MinTime: c.MinTime,
 				MaxTime: c.MaxTime,
-				Raw: &storepb.Chunk{
+				Raw: &typespb.Chunk{
 					Data: chEnc.Bytes(),
-					Type: storepb.Chunk_Encoding(chEnc.Encoding() - 1),
+					Type: typespb.Chunk_Encoding(chEnc.Encoding() - 1),
 					Hash: xxhash.Sum64(chEnc.Bytes()),
 				},
 			})
@@ -299,7 +300,7 @@ type SeriesCase struct {
 	Req  *storepb.SeriesRequest
 
 	// Exact expectations are checked only for tests. For benchmarks only length is assured.
-	ExpectedSeries   []*storepb.Series
+	ExpectedSeries   []*typespb.Series
 	ExpectedWarnings []string
 	ExpectedHints    []hintspb.SeriesResponseHints
 	HintsCompareFunc func(t testutil.TB, expected, actual hintspb.SeriesResponseHints)

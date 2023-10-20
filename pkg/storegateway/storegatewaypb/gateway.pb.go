@@ -6,8 +6,9 @@ package storegatewaypb
 import (
 	context "context"
 	fmt "fmt"
-	proto "github.com/gogo/protobuf/proto"
 	storepb "github.com/cortexproject/cortex/pkg/storegateway/storepb"
+	_ "github.com/cortexproject/cortex/pkg/storegateway/typespb"
+	proto "github.com/gogo/protobuf/proto"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -28,23 +29,27 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 func init() { proto.RegisterFile("gateway.proto", fileDescriptor_f1a937782ebbded5) }
 
 var fileDescriptor_f1a937782ebbded5 = []byte{
-	// 257 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x4d, 0x4f, 0x2c, 0x49,
-	0x2d, 0x4f, 0xac, 0xd4, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0xe2, 0x84, 0x72, 0x0b, 0x92, 0xa4,
-	0xcc, 0xd3, 0x33, 0x4b, 0x32, 0x4a, 0x93, 0xf4, 0x92, 0xf3, 0x73, 0xf5, 0x4b, 0x32, 0x12, 0xf3,
-	0xf2, 0x8b, 0x75, 0x33, 0xf3, 0xa1, 0x2c, 0xfd, 0x82, 0xec, 0x74, 0xfd, 0xe2, 0x92, 0xfc, 0xa2,
-	0x54, 0x08, 0x59, 0x90, 0xa4, 0x5f, 0x54, 0x90, 0x0c, 0x31, 0xc3, 0xe8, 0x1a, 0x23, 0x17, 0x4f,
-	0x30, 0x48, 0xd4, 0x1d, 0x62, 0x96, 0x90, 0x25, 0x17, 0x5b, 0x70, 0x6a, 0x51, 0x66, 0x6a, 0xb1,
-	0x90, 0xa8, 0x1e, 0x44, 0xbf, 0x1e, 0x84, 0x1f, 0x94, 0x5a, 0x58, 0x9a, 0x5a, 0x5c, 0x22, 0x25,
-	0x86, 0x2e, 0x5c, 0x5c, 0x90, 0x9f, 0x57, 0x9c, 0x6a, 0xc0, 0x28, 0xe4, 0xcc, 0xc5, 0xe5, 0x93,
-	0x98, 0x94, 0x9a, 0xe3, 0x97, 0x98, 0x9b, 0x5a, 0x2c, 0x24, 0x09, 0x53, 0x87, 0x10, 0x83, 0x19,
-	0x21, 0x85, 0x4d, 0x0a, 0x62, 0x8c, 0x90, 0x1b, 0x17, 0x37, 0x58, 0x34, 0x2c, 0x31, 0xa7, 0x34,
-	0xb5, 0x58, 0x08, 0x55, 0x29, 0x44, 0x10, 0x66, 0x8c, 0x34, 0x56, 0x39, 0x88, 0x39, 0x4e, 0x2e,
-	0x17, 0x1e, 0xca, 0x31, 0xdc, 0x78, 0x28, 0xc7, 0xf0, 0xe1, 0xa1, 0x1c, 0x63, 0xc3, 0x23, 0x39,
-	0xc6, 0x15, 0x8f, 0xe4, 0x18, 0x4f, 0x3c, 0x92, 0x63, 0xbc, 0xf0, 0x48, 0x8e, 0xf1, 0xc1, 0x23,
-	0x39, 0xc6, 0x17, 0x8f, 0xe4, 0x18, 0x3e, 0x3c, 0x92, 0x63, 0x9c, 0xf0, 0x58, 0x8e, 0xe1, 0xc2,
-	0x63, 0x39, 0x86, 0x1b, 0x8f, 0xe5, 0x18, 0xa2, 0xf8, 0xc0, 0x21, 0x04, 0x0f, 0xd7, 0x24, 0x36,
-	0x70, 0x28, 0x19, 0x03, 0x02, 0x00, 0x00, 0xff, 0xff, 0x1b, 0xec, 0xe6, 0x0a, 0x7a, 0x01, 0x00,
+	// 321 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x91, 0xbf, 0x4e, 0x02, 0x41,
+	0x10, 0x87, 0x6f, 0x2d, 0x48, 0x5c, 0xc5, 0x62, 0x0b, 0x4d, 0x4e, 0x33, 0xb5, 0xd5, 0x1d, 0xc1,
+	0xd2, 0xd8, 0x20, 0x46, 0x4d, 0x0c, 0x85, 0x26, 0x16, 0x76, 0xb7, 0xe7, 0x04, 0x90, 0x3f, 0xbb,
+	0xee, 0xee, 0x45, 0xe8, 0x7c, 0x04, 0x5b, 0xdf, 0xc0, 0x47, 0xb1, 0xa4, 0xa4, 0x94, 0xa5, 0xb1,
+	0xe4, 0x11, 0x8c, 0xcc, 0x1d, 0xa2, 0xd0, 0x58, 0x5d, 0xe6, 0x9b, 0xf9, 0x7d, 0x97, 0xd9, 0xe1,
+	0xe5, 0x66, 0xe2, 0xf0, 0x29, 0x19, 0x46, 0xda, 0x28, 0xa7, 0xc4, 0x66, 0x5e, 0x6a, 0x19, 0xd6,
+	0x9a, 0x6d, 0xd7, 0xca, 0x64, 0x94, 0xaa, 0x5e, 0x9c, 0x2a, 0xe3, 0x70, 0xa0, 0x8d, 0x7a, 0xc0,
+	0xd4, 0xe5, 0x55, 0xac, 0x3b, 0xcd, 0xd8, 0x3a, 0x65, 0x30, 0xcf, 0x50, 0xa1, 0x65, 0x6c, 0x74,
+	0x4a, 0xba, 0xb0, 0xfe, 0x6f, 0x87, 0x1b, 0x6a, 0xb4, 0x5a, 0xd2, 0x97, 0x2c, 0xd5, 0xd7, 0x0d,
+	0xbe, 0x7d, 0xd9, 0xbf, 0xc7, 0xc1, 0x39, 0x0d, 0x89, 0x63, 0x5e, 0xba, 0x41, 0xd3, 0x46, 0x2b,
+	0x76, 0xa3, 0xfc, 0xa7, 0x11, 0x81, 0x6b, 0x7c, 0xcc, 0xd0, 0xba, 0x70, 0x6f, 0x85, 0x5b, 0xad,
+	0xfa, 0x16, 0x2b, 0x8c, 0xc2, 0x5d, 0x4c, 0xdd, 0xaf, 0xf0, 0x37, 0x58, 0x17, 0x26, 0xbe, 0x08,
+	0x9f, 0x71, 0x7e, 0x95, 0x48, 0xec, 0x36, 0x92, 0x1e, 0x5a, 0x11, 0x2e, 0x06, 0x7f, 0x60, 0x21,
+	0xd9, 0x5f, 0xdb, 0x23, 0x91, 0xb8, 0xe0, 0x5b, 0x73, 0x7a, 0x9b, 0x74, 0x33, 0xb4, 0xe2, 0xcf,
+	0x2c, 0xd1, 0x42, 0x74, 0xb0, 0xbe, 0x49, 0xa6, 0x6a, 0x83, 0x97, 0x4f, 0x5b, 0x59, 0xbf, 0x63,
+	0x8b, 0xb7, 0x39, 0xe1, 0x25, 0x02, 0x4b, 0xeb, 0x11, 0x58, 0x5d, 0xaf, 0xe0, 0xe4, 0x3a, 0x64,
+	0x15, 0x56, 0xab, 0x8f, 0x26, 0x10, 0x8c, 0x27, 0x10, 0xcc, 0x26, 0xc0, 0x9e, 0x3d, 0xb0, 0x37,
+	0x0f, 0xec, 0xdd, 0x03, 0x1b, 0x79, 0x60, 0x1f, 0x1e, 0xd8, 0xa7, 0x87, 0x60, 0xe6, 0x81, 0xbd,
+	0x4c, 0x21, 0x18, 0x4d, 0x21, 0x18, 0x4f, 0x21, 0xb8, 0xdb, 0x59, 0xbe, 0xa1, 0x96, 0xb2, 0x34,
+	0x3f, 0xdc, 0xd1, 0x57, 0x00, 0x00, 0x00, 0xff, 0xff, 0x8c, 0x18, 0xad, 0xff, 0x5e, 0x02, 0x00,
 	0x00,
 }
 
@@ -56,10 +61,10 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// StoreGatewayClient is the client API for StoreGateway service.
+// IndexGatewayClient is the client API for IndexGateway service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
-type StoreGatewayClient interface {
+type IndexGatewayClient interface {
 	// Series streams each Series for given label matchers and time range.
 	//
 	// Series should strictly stream full series after series, optionally split by time. This means that a single frame can contain
@@ -67,27 +72,28 @@ type StoreGatewayClient interface {
 	// be sent for previous one.
 	//
 	// Series are sorted.
-	Series(ctx context.Context, in *storepb.SeriesRequest, opts ...grpc.CallOption) (StoreGateway_SeriesClient, error)
+	Series(ctx context.Context, in *storepb.SeriesRequest, opts ...grpc.CallOption) (IndexGateway_SeriesClient, error)
+	Select(ctx context.Context, in *storepb.SelectRequest, opts ...grpc.CallOption) (IndexGateway_SelectClient, error)
 	// LabelNames returns all label names that is available.
 	LabelNames(ctx context.Context, in *storepb.LabelNamesRequest, opts ...grpc.CallOption) (*storepb.LabelNamesResponse, error)
 	// LabelValues returns all label values for given label name.
 	LabelValues(ctx context.Context, in *storepb.LabelValuesRequest, opts ...grpc.CallOption) (*storepb.LabelValuesResponse, error)
 }
 
-type storeGatewayClient struct {
+type indexGatewayClient struct {
 	cc *grpc.ClientConn
 }
 
-func NewStoreGatewayClient(cc *grpc.ClientConn) StoreGatewayClient {
-	return &storeGatewayClient{cc}
+func NewIndexGatewayClient(cc *grpc.ClientConn) IndexGatewayClient {
+	return &indexGatewayClient{cc}
 }
 
-func (c *storeGatewayClient) Series(ctx context.Context, in *storepb.SeriesRequest, opts ...grpc.CallOption) (StoreGateway_SeriesClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_StoreGateway_serviceDesc.Streams[0], "/gatewaypb.StoreGateway/Series", opts...)
+func (c *indexGatewayClient) Series(ctx context.Context, in *storepb.SeriesRequest, opts ...grpc.CallOption) (IndexGateway_SeriesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_IndexGateway_serviceDesc.Streams[0], "/gatewaypb.IndexGateway/Series", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &storeGatewaySeriesClient{stream}
+	x := &indexGatewaySeriesClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -97,16 +103,16 @@ func (c *storeGatewayClient) Series(ctx context.Context, in *storepb.SeriesReque
 	return x, nil
 }
 
-type StoreGateway_SeriesClient interface {
+type IndexGateway_SeriesClient interface {
 	Recv() (*storepb.SeriesResponse, error)
 	grpc.ClientStream
 }
 
-type storeGatewaySeriesClient struct {
+type indexGatewaySeriesClient struct {
 	grpc.ClientStream
 }
 
-func (x *storeGatewaySeriesClient) Recv() (*storepb.SeriesResponse, error) {
+func (x *indexGatewaySeriesClient) Recv() (*storepb.SeriesResponse, error) {
 	m := new(storepb.SeriesResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -114,26 +120,58 @@ func (x *storeGatewaySeriesClient) Recv() (*storepb.SeriesResponse, error) {
 	return m, nil
 }
 
-func (c *storeGatewayClient) LabelNames(ctx context.Context, in *storepb.LabelNamesRequest, opts ...grpc.CallOption) (*storepb.LabelNamesResponse, error) {
+func (c *indexGatewayClient) Select(ctx context.Context, in *storepb.SelectRequest, opts ...grpc.CallOption) (IndexGateway_SelectClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_IndexGateway_serviceDesc.Streams[1], "/gatewaypb.IndexGateway/Select", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &indexGatewaySelectClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type IndexGateway_SelectClient interface {
+	Recv() (*storepb.SelectResponse, error)
+	grpc.ClientStream
+}
+
+type indexGatewaySelectClient struct {
+	grpc.ClientStream
+}
+
+func (x *indexGatewaySelectClient) Recv() (*storepb.SelectResponse, error) {
+	m := new(storepb.SelectResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *indexGatewayClient) LabelNames(ctx context.Context, in *storepb.LabelNamesRequest, opts ...grpc.CallOption) (*storepb.LabelNamesResponse, error) {
 	out := new(storepb.LabelNamesResponse)
-	err := c.cc.Invoke(ctx, "/gatewaypb.StoreGateway/LabelNames", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/gatewaypb.IndexGateway/LabelNames", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *storeGatewayClient) LabelValues(ctx context.Context, in *storepb.LabelValuesRequest, opts ...grpc.CallOption) (*storepb.LabelValuesResponse, error) {
+func (c *indexGatewayClient) LabelValues(ctx context.Context, in *storepb.LabelValuesRequest, opts ...grpc.CallOption) (*storepb.LabelValuesResponse, error) {
 	out := new(storepb.LabelValuesResponse)
-	err := c.cc.Invoke(ctx, "/gatewaypb.StoreGateway/LabelValues", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/gatewaypb.IndexGateway/LabelValues", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// StoreGatewayServer is the server API for StoreGateway service.
-type StoreGatewayServer interface {
+// IndexGatewayServer is the server API for IndexGateway service.
+type IndexGatewayServer interface {
 	// Series streams each Series for given label matchers and time range.
 	//
 	// Series should strictly stream full series after series, optionally split by time. This means that a single frame can contain
@@ -141,106 +179,240 @@ type StoreGatewayServer interface {
 	// be sent for previous one.
 	//
 	// Series are sorted.
-	Series(*storepb.SeriesRequest, StoreGateway_SeriesServer) error
+	Series(*storepb.SeriesRequest, IndexGateway_SeriesServer) error
+	Select(*storepb.SelectRequest, IndexGateway_SelectServer) error
 	// LabelNames returns all label names that is available.
 	LabelNames(context.Context, *storepb.LabelNamesRequest) (*storepb.LabelNamesResponse, error)
 	// LabelValues returns all label values for given label name.
 	LabelValues(context.Context, *storepb.LabelValuesRequest) (*storepb.LabelValuesResponse, error)
 }
 
-// UnimplementedStoreGatewayServer can be embedded to have forward compatible implementations.
-type UnimplementedStoreGatewayServer struct {
+// UnimplementedIndexGatewayServer can be embedded to have forward compatible implementations.
+type UnimplementedIndexGatewayServer struct {
 }
 
-func (*UnimplementedStoreGatewayServer) Series(req *storepb.SeriesRequest, srv StoreGateway_SeriesServer) error {
+func (*UnimplementedIndexGatewayServer) Series(req *storepb.SeriesRequest, srv IndexGateway_SeriesServer) error {
 	return status.Errorf(codes.Unimplemented, "method Series not implemented")
 }
-func (*UnimplementedStoreGatewayServer) LabelNames(ctx context.Context, req *storepb.LabelNamesRequest) (*storepb.LabelNamesResponse, error) {
+func (*UnimplementedIndexGatewayServer) Select(req *storepb.SelectRequest, srv IndexGateway_SelectServer) error {
+	return status.Errorf(codes.Unimplemented, "method Select not implemented")
+}
+func (*UnimplementedIndexGatewayServer) LabelNames(ctx context.Context, req *storepb.LabelNamesRequest) (*storepb.LabelNamesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LabelNames not implemented")
 }
-func (*UnimplementedStoreGatewayServer) LabelValues(ctx context.Context, req *storepb.LabelValuesRequest) (*storepb.LabelValuesResponse, error) {
+func (*UnimplementedIndexGatewayServer) LabelValues(ctx context.Context, req *storepb.LabelValuesRequest) (*storepb.LabelValuesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LabelValues not implemented")
 }
 
-func RegisterStoreGatewayServer(s *grpc.Server, srv StoreGatewayServer) {
-	s.RegisterService(&_StoreGateway_serviceDesc, srv)
+func RegisterIndexGatewayServer(s *grpc.Server, srv IndexGatewayServer) {
+	s.RegisterService(&_IndexGateway_serviceDesc, srv)
 }
 
-func _StoreGateway_Series_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _IndexGateway_Series_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(storepb.SeriesRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(StoreGatewayServer).Series(m, &storeGatewaySeriesServer{stream})
+	return srv.(IndexGatewayServer).Series(m, &indexGatewaySeriesServer{stream})
 }
 
-type StoreGateway_SeriesServer interface {
+type IndexGateway_SeriesServer interface {
 	Send(*storepb.SeriesResponse) error
 	grpc.ServerStream
 }
 
-type storeGatewaySeriesServer struct {
+type indexGatewaySeriesServer struct {
 	grpc.ServerStream
 }
 
-func (x *storeGatewaySeriesServer) Send(m *storepb.SeriesResponse) error {
+func (x *indexGatewaySeriesServer) Send(m *storepb.SeriesResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _StoreGateway_LabelNames_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _IndexGateway_Select_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(storepb.SelectRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(IndexGatewayServer).Select(m, &indexGatewaySelectServer{stream})
+}
+
+type IndexGateway_SelectServer interface {
+	Send(*storepb.SelectResponse) error
+	grpc.ServerStream
+}
+
+type indexGatewaySelectServer struct {
+	grpc.ServerStream
+}
+
+func (x *indexGatewaySelectServer) Send(m *storepb.SelectResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _IndexGateway_LabelNames_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(storepb.LabelNamesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(StoreGatewayServer).LabelNames(ctx, in)
+		return srv.(IndexGatewayServer).LabelNames(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/gatewaypb.StoreGateway/LabelNames",
+		FullMethod: "/gatewaypb.IndexGateway/LabelNames",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StoreGatewayServer).LabelNames(ctx, req.(*storepb.LabelNamesRequest))
+		return srv.(IndexGatewayServer).LabelNames(ctx, req.(*storepb.LabelNamesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _StoreGateway_LabelValues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _IndexGateway_LabelValues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(storepb.LabelValuesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(StoreGatewayServer).LabelValues(ctx, in)
+		return srv.(IndexGatewayServer).LabelValues(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/gatewaypb.StoreGateway/LabelValues",
+		FullMethod: "/gatewaypb.IndexGateway/LabelValues",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StoreGatewayServer).LabelValues(ctx, req.(*storepb.LabelValuesRequest))
+		return srv.(IndexGatewayServer).LabelValues(ctx, req.(*storepb.LabelValuesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _StoreGateway_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "gatewaypb.StoreGateway",
-	HandlerType: (*StoreGatewayServer)(nil),
+var _IndexGateway_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "gatewaypb.IndexGateway",
+	HandlerType: (*IndexGatewayServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "LabelNames",
-			Handler:    _StoreGateway_LabelNames_Handler,
+			Handler:    _IndexGateway_LabelNames_Handler,
 		},
 		{
 			MethodName: "LabelValues",
-			Handler:    _StoreGateway_LabelValues_Handler,
+			Handler:    _IndexGateway_LabelValues_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "Series",
-			Handler:       _StoreGateway_Series_Handler,
+			Handler:       _IndexGateway_Series_Handler,
 			ServerStreams: true,
+		},
+		{
+			StreamName:    "Select",
+			Handler:       _IndexGateway_Select_Handler,
+			ServerStreams: true,
+		},
+	},
+	Metadata: "gateway.proto",
+}
+
+// ChunksGatewayClient is the client API for ChunksGateway service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type ChunksGatewayClient interface {
+	Chunks(ctx context.Context, opts ...grpc.CallOption) (ChunksGateway_ChunksClient, error)
+}
+
+type chunksGatewayClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewChunksGatewayClient(cc *grpc.ClientConn) ChunksGatewayClient {
+	return &chunksGatewayClient{cc}
+}
+
+func (c *chunksGatewayClient) Chunks(ctx context.Context, opts ...grpc.CallOption) (ChunksGateway_ChunksClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_ChunksGateway_serviceDesc.Streams[0], "/gatewaypb.ChunksGateway/Chunks", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &chunksGatewayChunksClient{stream}
+	return x, nil
+}
+
+type ChunksGateway_ChunksClient interface {
+	Send(*storepb.ChunksRequest) error
+	Recv() (*storepb.ChunksResponse, error)
+	grpc.ClientStream
+}
+
+type chunksGatewayChunksClient struct {
+	grpc.ClientStream
+}
+
+func (x *chunksGatewayChunksClient) Send(m *storepb.ChunksRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *chunksGatewayChunksClient) Recv() (*storepb.ChunksResponse, error) {
+	m := new(storepb.ChunksResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// ChunksGatewayServer is the server API for ChunksGateway service.
+type ChunksGatewayServer interface {
+	Chunks(ChunksGateway_ChunksServer) error
+}
+
+// UnimplementedChunksGatewayServer can be embedded to have forward compatible implementations.
+type UnimplementedChunksGatewayServer struct {
+}
+
+func (*UnimplementedChunksGatewayServer) Chunks(srv ChunksGateway_ChunksServer) error {
+	return status.Errorf(codes.Unimplemented, "method Chunks not implemented")
+}
+
+func RegisterChunksGatewayServer(s *grpc.Server, srv ChunksGatewayServer) {
+	s.RegisterService(&_ChunksGateway_serviceDesc, srv)
+}
+
+func _ChunksGateway_Chunks_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ChunksGatewayServer).Chunks(&chunksGatewayChunksServer{stream})
+}
+
+type ChunksGateway_ChunksServer interface {
+	Send(*storepb.ChunksResponse) error
+	Recv() (*storepb.ChunksRequest, error)
+	grpc.ServerStream
+}
+
+type chunksGatewayChunksServer struct {
+	grpc.ServerStream
+}
+
+func (x *chunksGatewayChunksServer) Send(m *storepb.ChunksResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *chunksGatewayChunksServer) Recv() (*storepb.ChunksRequest, error) {
+	m := new(storepb.ChunksRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+var _ChunksGateway_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "gatewaypb.ChunksGateway",
+	HandlerType: (*ChunksGatewayServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Chunks",
+			Handler:       _ChunksGateway_Chunks_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "gateway.proto",

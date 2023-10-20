@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/cortexproject/cortex/pkg/storegateway/storepb"
+	"github.com/cortexproject/cortex/pkg/storegateway/typespb"
 	"github.com/go-kit/log"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -17,8 +18,9 @@ import (
 
 type seriesEntry struct {
 	lset labels.Labels
+	meta []*typespb.ChunkMeta
 	refs []chunks.ChunkRef
-	chks []storepb.AggrChunk
+	chks []typespb.AggrChunk
 }
 
 // blockSeriesClient is a storepb.Store_SeriesClient for a
@@ -184,7 +186,7 @@ func (b *blockSeriesClient) Recv() (*storepb.SeriesResponse, error) {
 	next := b.entries[0]
 	b.entries = b.entries[1:]
 
-	return storepb.NewSeriesResponse(&storepb.Series{
+	return storepb.NewSeriesResponse(&typespb.Series{
 		Labels: labelpb.ZLabelsFromPromLabels(next.lset),
 		Chunks: next.chks,
 	}), nil

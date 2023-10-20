@@ -60,7 +60,7 @@ func (s *blocksStoreBalancedSet) resolve(ctx context.Context) error {
 	return nil
 }
 
-func (s *blocksStoreBalancedSet) GetClientsFor(_ string, blockIDs []ulid.ULID, exclude map[ulid.ULID][]string, _ map[ulid.ULID]map[string]int) (map[BlocksStoreClient][]ulid.ULID, error) {
+func (s *blocksStoreBalancedSet) GetClientsFor(_ string, blockIDs []ulid.ULID, exclude map[ulid.ULID][]string, _ map[ulid.ULID]map[string]int) (map[ulid.ULID]BlocksStoreClient, error) {
 	addresses := s.dnsProvider.Addresses()
 	if len(addresses) == 0 {
 		return nil, fmt.Errorf("no address resolved for the store-gateway service addresses %s", strings.Join(s.serviceAddresses, ","))
@@ -72,7 +72,7 @@ func (s *blocksStoreBalancedSet) GetClientsFor(_ string, blockIDs []ulid.ULID, e
 	})
 
 	// Pick a non excluded client for each block.
-	clients := map[BlocksStoreClient][]ulid.ULID{}
+	clients := map[ulid.ULID]BlocksStoreClient{}
 
 	for _, blockID := range blockIDs {
 		// Pick the first non excluded store-gateway instance.
@@ -86,7 +86,7 @@ func (s *blocksStoreBalancedSet) GetClientsFor(_ string, blockIDs []ulid.ULID, e
 			return nil, errors.Wrapf(err, "failed to get store-gateway client for %s", addr)
 		}
 
-		clients[c.(BlocksStoreClient)] = append(clients[c.(BlocksStoreClient)], blockID)
+		clients[blockID] = c.(BlocksStoreClient)
 	}
 
 	return clients, nil

@@ -5,7 +5,7 @@ syntax = "proto3";
 package storepb;
 
 import "gogoproto/gogo.proto";
-import "types.proto";
+import "github.com/cortexproject/cortex/pkg/storegateway/typespb/types.proto";
 import "google/protobuf/any.proto";
 
 option go_package = "storepb";
@@ -45,7 +45,7 @@ service Store {
 message SeriesRequest {
     int64 min_time = 1;
     int64 max_time = 2;
-    repeated LabelMatcher matchers = 3 [(gogoproto.nullable) = false];
+    repeated typespb.LabelMatcher matchers = 3 [(gogoproto.nullable) = false];
 
     int64 max_resolution_window = 4;
     repeated Aggr aggregates = 5;
@@ -54,7 +54,7 @@ message SeriesRequest {
     bool partial_response_disabled = 6;
 
     // TODO(bwplotka): Move Thanos components to use strategy instead. Including QueryAPI.
-    PartialResponseStrategy partial_response_strategy = 7;
+    typespb.PartialResponseStrategy partial_response_strategy = 7;
 
     // skip_chunks controls whether sending chunks or not in series responses.
     bool skip_chunks = 8;
@@ -154,7 +154,7 @@ enum Aggr {
 message SeriesResponse {
     oneof result {
         /// series contains 1 response series. The series labels are sorted by name.
-        Series series = 1;
+        typespb.Series series = 1;
 
         /// warning is considered an information piece in place of series for warning purposes.
         /// It is used to warn store API user about suspicious cases or partial response (if enabled).
@@ -173,7 +173,7 @@ message LabelNamesRequest {
     bool partial_response_disabled = 1;
 
     // TODO(bwplotka): Move Thanos components to use strategy instead. Including QueryAPI.
-    PartialResponseStrategy partial_response_strategy = 2;
+    typespb.PartialResponseStrategy partial_response_strategy = 2;
 
     int64 start = 3;
 
@@ -184,7 +184,7 @@ message LabelNamesRequest {
     // implementation of a specific store.
     google.protobuf.Any hints = 5;
 
-    repeated LabelMatcher matchers = 6 [(gogoproto.nullable) = false];
+    repeated typespb.LabelMatcher matchers = 6 [(gogoproto.nullable) = false];
 }
 
 message LabelNamesResponse {
@@ -203,7 +203,7 @@ message LabelNamesResponse {
     bool partial_response_disabled = 2;
 
     // TODO(bwplotka): Move Thanos components to use strategy instead. Including QueryAPI.
-    PartialResponseStrategy partial_response_strategy = 3;
+    typespb.PartialResponseStrategy partial_response_strategy = 3;
 
     int64 start = 4;
 
@@ -214,7 +214,7 @@ message LabelNamesResponse {
     // implementation of a specific store.
     google.protobuf.Any hints = 6;
 
-    repeated LabelMatcher matchers = 7 [(gogoproto.nullable) = false];
+    repeated typespb.LabelMatcher matchers = 7 [(gogoproto.nullable) = false];
 }
 
 message LabelValuesResponse {
@@ -242,7 +242,7 @@ service IndexStore {
 message SelectRequest {
     int64 min_time = 1;
     int64 max_time = 2;
-    repeated LabelMatcher matchers = 3 [(gogoproto.nullable) = false];
+    repeated typespb.LabelMatcher matchers = 3 [(gogoproto.nullable) = false];
 
     int64 max_resolution_window = 4;
     repeated Aggr aggregates = 5;
@@ -251,7 +251,7 @@ message SelectRequest {
     bool partial_response_disabled = 6;
 
     // TODO(bwplotka): Move Thanos components to use strategy instead. Including QueryAPI.
-    PartialResponseStrategy partial_response_strategy = 7;
+    typespb.PartialResponseStrategy partial_response_strategy = 7;
 
     // skip_chunks controls whether sending chunks or not in series responses.
     bool skip_chunks = 8;
@@ -292,7 +292,7 @@ message SelectRequest {
 message SelectResponse {
     oneof result {
         /// series contains 1 response series. The series labels are sorted by name.
-        SelectedSeries series = 1;
+        typespb.SelectedSeries series = 1;
 
         /// warning is considered an information piece in place of series for warning purposes.
         /// It is used to warn store API user about suspicious cases or partial response (if enabled).
@@ -305,4 +305,17 @@ message SelectResponse {
         /// be handled in such case (ie. merged vs keep the first/last one).
         google.protobuf.Any hints = 3;
     }
+}
+
+service ChunkStore {
+    rpc Chunks(stream ChunksRequest) returns (stream ChunksResponse);
+}
+
+message ChunksRequest {
+    string blockId = 1;
+    repeated uint64 chunkref = 2;
+}
+
+message ChunksResponse {
+    repeated typespb.AggrChunk chunks = 1;
 }

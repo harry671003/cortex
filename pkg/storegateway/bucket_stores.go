@@ -337,6 +337,46 @@ func (u *BucketStores) Series(req *storepb.SeriesRequest, srv storepb.Store_Seri
 	return err
 }
 
+// Series makes a series request to the underlying user bucket store.
+func (u *BucketStores) Select(req *storepb.SelectRequest, srv storepb.IndexStore_SelectServer) error {
+	spanLog, spanCtx := spanlogger.New(srv.Context(), "BucketStores.Series")
+	defer spanLog.Span.Finish()
+
+	userID := getUserIDFromGRPCContext(spanCtx)
+	if userID == "" {
+		return fmt.Errorf("no userID")
+	}
+
+	err := u.getStoreError(userID)
+	userBkt := bucket.NewUserBucketClient(userID, u.bucket, u.limits)
+	if err != nil {
+		if cortex_errors.ErrorIs(err, userBkt.IsAccessDeniedErr) {
+			return httpgrpc.Errorf(int(codes.PermissionDenied), "store error: %s", err)
+		}
+
+		return err
+	}
+
+	store := u.getStore(userID)
+	if store == nil {
+		return nil
+	}
+
+	maxInflightRequests := u.cfg.BucketStore.MaxInflightRequests
+	if maxInflightRequests > 0 {
+		if u.getInflightRequestCnt() >= maxInflightRequests {
+			return ErrTooManyInflightRequests
+		}
+
+		u.incrementInflightRequestCnt()
+		defer u.decrementInflightRequestCnt()
+	}
+
+	err = store.Select(req, srv)
+
+	return err
+}
+
 func (u *BucketStores) getInflightRequestCnt() int {
 	u.inflightRequestMu.RLock()
 	defer u.inflightRequestMu.RUnlock()
