@@ -2,11 +2,13 @@ package storegateway
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/cortexproject/cortex/pkg/storegateway/storepb"
 	"github.com/go-kit/log"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/thanos-io/thanos/pkg/runutil"
 )
 
 // Loads a batch of chunks
@@ -14,45 +16,38 @@ type blockChunkClient struct {
 	ctx    context.Context
 	logger log.Logger
 
-	mint           int64
-	maxt           int64
 	chunkr         *bucketChunkReader
 	loadAggregates []storepb.Aggr
-	chunksLimiter  ChunksLimiter
 	bytesLimiter   BytesLimiter
 
-	calculateChunkHash     bool
-	seriesFetchDurationSum *prometheus.HistogramVec
-	chunkFetchDuration     *prometheus.HistogramVec
-	chunkFetchDurationSum  *prometheus.HistogramVec
-	tenant                 string
-
-	batchSize int
+	calculateChunkHash bool
+	tenant             string
 }
 
-func newBlockChunksClient(
+func newBlockChunkClient(
 	ctx context.Context,
 	logger log.Logger,
 	b *bucketBlock,
-	req *storepb.SeriesRequest,
 	limiter ChunksLimiter,
 	bytesLimiter BytesLimiter,
 	calculateChunkHash bool,
-	batchSize int,
 	chunkFetchDuration *prometheus.HistogramVec,
 	chunkFetchDurationSum *prometheus.HistogramVec,
-	tenant string,
 ) *blockChunkClient {
+	chunkr := b.chunkReader()
 	return &blockChunkClient{
-		ctx:    ctx,
-		logger: logger,
-		mint:   req.MinTime,
-		maxt:   req.MaxTime,
-		chunkr: b.chunkReader(),
+		ctx:                ctx,
+		logger:             logger,
+		chunkr:             chunkr,
+		bytesLimiter:       bytesLimiter,
+		calculateChunkHash: calculateChunkHash,
 	}
 }
 
 func (b *blockChunkClient) loadChunks(entries []seriesEntry) error {
+	if b.chunkr == nil {
+		fmt.Println("NIL inloadChunks")
+	}
 	b.chunkr.reset()
 
 	for i, s := range entries {
@@ -68,4 +63,8 @@ func (b *blockChunkClient) loadChunks(entries []seriesEntry) error {
 	}
 
 	return nil
+}
+
+func (b *blockChunkClient) Close() {
+	runutil.CloseWithLogOnErr(b.logger, b.chunkr, "series block")
 }

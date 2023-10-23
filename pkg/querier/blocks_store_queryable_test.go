@@ -1578,6 +1578,8 @@ func TestBlocksStoreQuerier_PromQLExecution(t *testing.T) {
 				mockHintsResponse(block2),
 			}}
 
+			chunkGateway := &chunkGatewayClientMock{remoteAddr: "1.1.1.1"}
+
 			stores := &blocksStoreSetMock{
 				Service: services.NewIdleService(nil, nil),
 				mockedResponses: []interface{}{
@@ -1588,8 +1590,18 @@ func TestBlocksStoreQuerier_PromQLExecution(t *testing.T) {
 				},
 			}
 
+			chunkStores := &chunksStoreSetMock{
+				Service: services.NewIdleService(nil, nil),
+				mockedResponses: []interface{}{
+					map[ChunksStoreClient][]ulid.ULID{
+						chunkGateway: {block1},
+						chunkGateway: {block2},
+					},
+				},
+			}
+
 			// Instance the querier that will be executed to run the query.
-			queryable, err := NewBlocksStoreQueryable(stores, finder, NewBlocksConsistencyChecker(0, 0, logger, nil), &blocksStoreLimitsMock{}, 0, logger, nil)
+			queryable, err := NewBlocksStoreQueryable(stores, chunkStores, finder, NewBlocksConsistencyChecker(0, 0, logger, nil), &blocksStoreLimitsMock{}, 0, logger, nil)
 			require.NoError(t, err)
 			require.NoError(t, services.StartAndAwaitRunning(context.Background(), queryable))
 			defer services.StopAndAwaitTerminated(context.Background(), queryable) // nolint:errcheck
@@ -1640,6 +1652,31 @@ func (m *blocksStoreSetMock) GetClientsFor(_ string, _ []ulid.ULID, _ map[ulid.U
 	return nil, errors.New("unknown data type in the mocked result")
 }
 
+type chunksStoreSetMock struct {
+	services.Service
+
+	mockedResponses []interface{}
+	nextResult      int
+}
+
+func (m *chunksStoreSetMock) GetClientsFor(_ string, _ []ulid.ULID, _ map[ulid.ULID][]string, _ map[ulid.ULID]map[string]int) (map[ulid.ULID]ChunksStoreClient, error) {
+	if m.nextResult >= len(m.mockedResponses) {
+		panic("not enough mocked results")
+	}
+
+	res := m.mockedResponses[m.nextResult]
+	m.nextResult++
+
+	if err, ok := res.(error); ok {
+		return nil, err
+	}
+	if clients, ok := res.(map[ulid.ULID]ChunksStoreClient); ok {
+		return clients, nil
+	}
+
+	return nil, errors.New("unknown data type in the mocked result")
+}
+
 type blocksFinderMock struct {
 	services.Service
 	mock.Mock
@@ -1648,6 +1685,36 @@ type blocksFinderMock struct {
 func (m *blocksFinderMock) GetBlocks(ctx context.Context, userID string, minT, maxT int64) (bucketindex.Blocks, map[ulid.ULID]*bucketindex.BlockDeletionMark, error) {
 	args := m.Called(ctx, userID, minT, maxT)
 	return args.Get(0).(bucketindex.Blocks), args.Get(1).(map[ulid.ULID]*bucketindex.BlockDeletionMark), args.Error(2)
+}
+
+type chunkGatewayClientMock struct {
+	remoteAddr            string
+	mockedChunksResponses []*storepb.ChunksResponse
+	mockedSeriesErr       error
+}
+
+func (m *chunkGatewayClientMock) RemoteAddress() string {
+	return m.remoteAddr
+}
+
+func (m *chunkGatewayClientMock) Chunks(ctx context.Context, opts ...grpc.CallOption) (storegatewaypb.ChunksGateway_ChunksClient, error) {
+	chunksClient := &chunkGatewayChunksClientMock{}
+
+	return chunksClient, m.mockedSeriesErr
+}
+
+type chunkGatewayChunksClientMock struct {
+	grpc.ClientStream
+}
+
+// Recv implements storegatewaypb.ChunksGateway_ChunksClient.
+func (*chunkGatewayChunksClientMock) Recv() (*storepb.ChunksResponse, error) {
+	return nil, io.EOF
+}
+
+// Send implements storegatewaypb.ChunksGateway_ChunksClient.
+func (*chunkGatewayChunksClientMock) Send(*storepb.ChunksRequest) error {
+	return nil
 }
 
 type storeGatewayClientMock struct {

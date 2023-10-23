@@ -2,6 +2,8 @@ package querier
 
 import (
 	"github.com/cortexproject/cortex/pkg/storegateway/typespb"
+	"github.com/go-kit/log"
+
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/util/annotations"
@@ -10,6 +12,7 @@ import (
 
 // Implementation of storage.SeriesSet, based on individual responses from store client.
 type blockSeriesSet struct {
+	logger   log.Logger
 	series   []*typespb.SelectedSeries
 	chunks   [][]*typespb.AggrChunk
 	warnings annotations.Annotations
@@ -45,11 +48,18 @@ func (bqss *blockSeriesSet) Next() bool {
 		chunks = append(chunks, *c)
 	}
 
+	// level.Info(bqss.logger).Log("msg", "Inside blockSeriesSet.Next",
+	// 	"labels", currLabels,
+	// 	"chunks", len(currChunks),
+	// )
 	bqss.currSeries = newBlockQuerierSeries(currLabels, chunks)
 	return true
 }
 
 func (bqss *blockSeriesSet) At() storage.Series {
+	// level.Info(bqss.logger).Log("msg", "Inside blockSeriesSet.At",
+	// 	"series", bqss.currSeries.Labels(),
+	// )
 	return bqss.currSeries
 }
 

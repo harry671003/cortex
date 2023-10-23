@@ -369,6 +369,7 @@ type BucketStore struct {
 	bkt             objstore.InstrumentedBucketReader
 	fetcher         block.MetadataFetcher
 	dir             string
+	loadIndex       bool
 	indexCache      storecache.IndexCache
 	indexReaderPool *indexheader.ReaderPool
 	buffers         sync.Pool
@@ -548,6 +549,7 @@ func NewBucketStore(
 	enableCompatibilityLabel bool,
 	postingOffsetsInMemSampling int,
 	enableSeriesResponseHints bool, // TODO(pracucci) Thanos 0.12 and below doesn't gracefully handle new fields in SeriesResponse. Drop this flag and always enable hints once we can drop backward compatibility.
+	loadIndex bool,
 	lazyIndexReaderEnabled bool,
 	lazyIndexReaderIdleTimeout time.Duration,
 	options ...BucketStoreOption,
@@ -570,6 +572,7 @@ func NewBucketStore(
 		chunksLimiterFactory:        chunksLimiterFactory,
 		seriesLimiterFactory:        seriesLimiterFactory,
 		bytesLimiterFactory:         bytesLimiterFactory,
+		loadIndex:                   loadIndex,
 		partitioner:                 partitioner,
 		enableCompatibilityLabel:    enableCompatibilityLabel,
 		postingOffsetsInMemSampling: postingOffsetsInMemSampling,
@@ -755,17 +758,22 @@ func (s *BucketStore) addBlock(ctx context.Context, meta *metadata.Meta) (err er
 	lset := labels.FromMap(meta.Thanos.Labels)
 	h := lset.Hash()
 
-	indexHeaderReader, err := s.indexReaderPool.NewBinaryReader(
-		ctx,
-		s.logger,
-		s.bkt,
-		s.dir,
-		meta.ULID,
-		s.postingOffsetsInMemSampling,
-	)
-	if err != nil {
-		return errors.Wrap(err, "create index header reader")
+	var indexHeaderReader indexheader.Reader = nil
+
+	if s.loadIndex {
+		indexHeaderReader, err = s.indexReaderPool.NewBinaryReader(
+			ctx,
+			s.logger,
+			s.bkt,
+			s.dir,
+			meta.ULID,
+			s.postingOffsetsInMemSampling,
+		)
+		if err != nil {
+			return errors.Wrap(err, "create index header reader")
+		}
 	}
+
 	defer func() {
 		if err != nil {
 			runutil.CloseWithErrCapture(&err, indexHeaderReader, "index-header")
@@ -1520,6 +1528,89 @@ func (s *BucketStore) Select(req *storepb.SelectRequest, srv storepb.IndexStore_
 	return nil
 }
 
+func (s *BucketStore) Chunks(srv storepb.ChunkStore_ChunksServer) (err error) {
+	var block *bucketBlock
+	var client *blockChunkClient
+	tenant, _ := tenancy.GetTenantFromGRPCMetadata(srv.Context())
+	var bytesLimiter = s.bytesLimiterFactory(s.metrics.queriesDropped.WithLabelValues("bytes", tenant))
+	var chunksLimiter = s.chunksLimiterFactory(s.metrics.queriesDropped.WithLabelValues("chunks", tenant))
+
+	entries := []seriesEntry{}
+
+	for {
+		in, err := srv.Recv()
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			return err
+		}
+
+		if block == nil {
+			fmt.Println("Trying to get the block again")
+			id, err := ulid.Parse(in.BlockId)
+			if err != nil {
+				return err
+			}
+
+			if block = s.getBlock(id); block == nil {
+				fmt.Println("BLOCK is nil")
+				return errors.New("block not found")
+			}
+		}
+		refs := make([]chunks.ChunkRef, 0, len(in.Chunkref))
+		chks := make([]typespb.AggrChunk, 0, len(in.Chunkref))
+
+		for _, r := range in.Chunkref {
+			refs = append(refs, chunks.ChunkRef(r))
+			chks = append(chks, typespb.AggrChunk{})
+		}
+
+		entries = append(entries, seriesEntry{
+			refs: refs,
+			chks: chks,
+		})
+	}
+
+	if len(entries) == 0 {
+		return
+	}
+
+	if block == nil {
+		fmt.Println("BLOCK NIL")
+	}
+
+	client = newBlockChunkClient(
+		srv.Context(),
+		s.logger,
+		block,
+		chunksLimiter,
+		bytesLimiter,
+		s.enableChunkHashCalculation,
+		s.metrics.chunkFetchDuration,
+		s.metrics.chunkFetchDurationSum,
+	)
+
+	defer client.Close()
+
+	if err := client.loadChunks(entries); err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		chks := make([]*typespb.AggrChunk, 0, len(entry.chks))
+		for _, c := range entry.chks {
+			chks = append(chks, &c)
+		}
+		srv.Send(&storepb.ChunksResponse{
+			Chunks: chks,
+		})
+	}
+
+	return nil
+}
+
 func chunksSize(chks []typespb.AggrChunk) (size int) {
 	for _, chk := range chks {
 		size += chk.Size() // This gets the encoded proto size.
@@ -2030,6 +2121,17 @@ func (s *bucketBlockSet) getFor(mint, maxt, maxResolutionMillis int64, blockMatc
 	return bs
 }
 
+func (s *bucketBlockSet) getBlock(blockId string) (*bucketBlock, error) {
+	for _, a := range s.blocks {
+		for _, b := range a {
+			if b.meta.ULID.String() == blockId {
+				return b, nil
+			}
+		}
+	}
+	return nil, errors.New("block not found")
+}
+
 // labelMatchers verifies whether the block set matches the given matchers and returns a new
 // set of matchers that is equivalent when querying data within the block.
 func (s *bucketBlockSet) labelMatchers(matchers ...*labels.Matcher) ([]*labels.Matcher, bool) {
@@ -2203,6 +2305,7 @@ func (b *bucketBlock) indexReader() *bucketIndexReader {
 }
 
 func (b *bucketBlock) chunkReader() *bucketChunkReader {
+	fmt.Println("CALL chunkReader")
 	b.pendingReaders.Add(1)
 	return newBucketChunkReader(b)
 }

@@ -54,6 +54,7 @@ type BucketStores struct {
 
 	// Index cache shared across all tenants.
 	indexCache storecache.IndexCache
+	loadIndex  bool
 
 	// Chunks bytes pool shared across all tenants.
 	chunksPool pool.Bytes
@@ -86,7 +87,7 @@ type BucketStores struct {
 var ErrTooManyInflightRequests = status.Error(codes.ResourceExhausted, "too many inflight requests in store gateway")
 
 // NewBucketStores makes a new BucketStores.
-func NewBucketStores(cfg tsdb.BlocksStorageConfig, shardingStrategy ShardingStrategy, bucketClient objstore.Bucket, limits *validation.Overrides, logLevel logging.Level, logger log.Logger, reg prometheus.Registerer) (*BucketStores, error) {
+func NewBucketStores(cfg tsdb.BlocksStorageConfig, shardingStrategy ShardingStrategy, bucketClient objstore.Bucket, loadIndex bool, limits *validation.Overrides, logLevel logging.Level, logger log.Logger, reg prometheus.Registerer) (*BucketStores, error) {
 	cachingBucket, err := tsdb.CreateCachingBucket(cfg.BucketStore.ChunksCache, cfg.BucketStore.MetadataCache, bucketClient, logger, reg)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create caching bucket")
@@ -103,6 +104,7 @@ func NewBucketStores(cfg tsdb.BlocksStorageConfig, shardingStrategy ShardingStra
 	u := &BucketStores{
 		logger:             logger,
 		cfg:                cfg,
+		loadIndex:          loadIndex,
 		limits:             limits,
 		bucket:             cachingBucket,
 		shardingStrategy:   shardingStrategy,
@@ -377,6 +379,46 @@ func (u *BucketStores) Select(req *storepb.SelectRequest, srv storepb.IndexStore
 	return err
 }
 
+// Chunks returns chunks
+func (u *BucketStores) Chunks(srv storepb.ChunkStore_ChunksServer) error {
+	spanLog, spanCtx := spanlogger.New(srv.Context(), "BucketStores.Series")
+	defer spanLog.Span.Finish()
+
+	userID := getUserIDFromGRPCContext(spanCtx)
+	if userID == "" {
+		return fmt.Errorf("no userID")
+	}
+
+	err := u.getStoreError(userID)
+	userBkt := bucket.NewUserBucketClient(userID, u.bucket, u.limits)
+	if err != nil {
+		if cortex_errors.ErrorIs(err, userBkt.IsAccessDeniedErr) {
+			return httpgrpc.Errorf(int(codes.PermissionDenied), "store error: %s", err)
+		}
+
+		return err
+	}
+
+	store := u.getStore(userID)
+	if store == nil {
+		return nil
+	}
+
+	maxInflightRequests := u.cfg.BucketStore.MaxInflightRequests
+	if maxInflightRequests > 0 {
+		if u.getInflightRequestCnt() >= maxInflightRequests {
+			return ErrTooManyInflightRequests
+		}
+
+		u.incrementInflightRequestCnt()
+		defer u.decrementInflightRequestCnt()
+	}
+
+	err = store.Chunks(srv)
+
+	return err
+}
+
 func (u *BucketStores) getInflightRequestCnt() int {
 	u.inflightRequestMu.RLock()
 	defer u.inflightRequestMu.RUnlock()
@@ -645,6 +687,7 @@ func (u *BucketStores) getOrCreateStore(userID string) (*BucketStore, error) {
 		false, // No need to enable backward compatibility with Thanos pre 0.8.0 queriers
 		u.cfg.BucketStore.PostingOffsetsInMemSampling,
 		true, // Enable series hints.
+		u.loadIndex,
 		u.cfg.BucketStore.IndexHeaderLazyLoadingEnabled,
 		u.cfg.BucketStore.IndexHeaderLazyLoadingIdleTimeout,
 		bucketStoreOpts...,

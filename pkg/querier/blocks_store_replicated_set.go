@@ -7,6 +7,7 @@ import (
 	"math/rand"
 
 	"github.com/go-kit/log"
+	"github.com/go-kit/log/level"
 	"github.com/oklog/ulid"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -36,6 +37,7 @@ type blocksStoreReplicationSet struct {
 	shardingStrategy  string
 	balancingStrategy loadBalancingStrategy
 	limits            BlocksStoreLimits
+	logger            log.Logger
 
 	zoneAwarenessEnabled      bool
 	zoneStableShuffleSharding bool
@@ -62,6 +64,7 @@ func newBlocksStoreReplicationSet(
 		shardingStrategy:  shardingStrategy,
 		balancingStrategy: balancingStrategy,
 		limits:            limits,
+		logger:            logger,
 
 		zoneAwarenessEnabled:      zoneAwarenessEnabled,
 		zoneStableShuffleSharding: zoneStableShuffleSharding,
@@ -125,6 +128,8 @@ func (s *blocksStoreReplicationSet) GetClientsFor(userID string, blockIDs []ulid
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get store-gateway replication set owning the block %s", blockID.String())
 		}
+
+		level.Info(s.logger).Log("msg", "GetClientsFor", "blockID", blockID.String(), "excluded", fmt.Sprintf("%v", exclude[blockID]), "attempted", fmt.Sprintf("%v", attemptedBlocksZones[blockID]))
 
 		// Pick a non excluded store-gateway instance.
 		instance := getNonExcludedInstance(set, exclude[blockID], s.balancingStrategy, s.zoneAwarenessEnabled, attemptedBlocksZones[blockID])

@@ -31,6 +31,20 @@ func newStoreGatewayClientFactory(clientCfg grpcclient.Config, reg prometheus.Re
 	}
 }
 
+func newChunksGatewayClientFactory(clientCfg grpcclient.Config, reg prometheus.Registerer) client.PoolFactory {
+	requestDuration := promauto.With(reg).NewHistogramVec(prometheus.HistogramOpts{
+		Namespace:   "cortex",
+		Name:        "chunks_client_request_duration_seconds",
+		Help:        "Time spent executing requests to the store-gateway.",
+		Buckets:     prometheus.ExponentialBuckets(0.008, 4, 7),
+		ConstLabels: prometheus.Labels{"client": "querier"},
+	}, []string{"operation", "status_code"})
+
+	return func(addr string) (client.PoolClient, error) {
+		return dialChunksGatewayClient(clientCfg, addr, requestDuration)
+	}
+}
+
 func dialStoreGatewayClient(clientCfg grpcclient.Config, addr string, requestDuration *prometheus.HistogramVec) (*storeGatewayClient, error) {
 	opts, err := clientCfg.DialOption(grpcclient.Instrument(requestDuration))
 	if err != nil {
@@ -47,6 +61,42 @@ func dialStoreGatewayClient(clientCfg grpcclient.Config, addr string, requestDur
 		HealthClient:       grpc_health_v1.NewHealthClient(conn),
 		conn:               conn,
 	}, nil
+}
+
+func dialChunksGatewayClient(clientCfg grpcclient.Config, addr string, requestDuration *prometheus.HistogramVec) (*chunksGatewayClient, error) {
+	opts, err := clientCfg.DialOption(grpcclient.Instrument(requestDuration))
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := grpc.Dial(addr, opts...)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to dial store-gateway %s", addr)
+	}
+
+	return &chunksGatewayClient{
+		ChunksGatewayClient: storegatewaypb.NewChunksGatewayClient(conn),
+		HealthClient:        grpc_health_v1.NewHealthClient(conn),
+		conn:                conn,
+	}, nil
+}
+
+type chunksGatewayClient struct {
+	storegatewaypb.ChunksGatewayClient
+	grpc_health_v1.HealthClient
+	conn *grpc.ClientConn
+}
+
+func (c *chunksGatewayClient) Close() error {
+	return c.conn.Close()
+}
+
+func (c *chunksGatewayClient) String() string {
+	return c.RemoteAddress()
+}
+
+func (c *chunksGatewayClient) RemoteAddress() string {
+	return c.conn.Target()
 }
 
 type storeGatewayClient struct {
@@ -93,6 +143,34 @@ func newStoreGatewayClientPool(discovery client.PoolServiceDiscovery, clientConf
 	})
 
 	return client.NewPool("store-gateway", poolCfg, discovery, newStoreGatewayClientFactory(clientCfg, reg), clientsCount, logger)
+}
+
+func newChunksGatewayClientPool(discovery client.PoolServiceDiscovery, clientConfig ClientConfig, logger log.Logger, reg prometheus.Registerer) *client.Pool {
+	// We prefer sane defaults instead of exposing further config options.
+	clientCfg := grpcclient.Config{
+		MaxRecvMsgSize:      100 << 20,
+		MaxSendMsgSize:      16 << 20,
+		GRPCCompression:     clientConfig.GRPCCompression,
+		RateLimit:           0,
+		RateLimitBurst:      0,
+		BackoffOnRatelimits: false,
+		TLSEnabled:          clientConfig.TLSEnabled,
+		TLS:                 clientConfig.TLS,
+	}
+	poolCfg := client.PoolConfig{
+		CheckInterval:      time.Minute,
+		HealthCheckEnabled: true,
+		HealthCheckTimeout: 10 * time.Second,
+	}
+
+	clientsCount := promauto.With(reg).NewGauge(prometheus.GaugeOpts{
+		Namespace:   "cortex",
+		Name:        "storegateway_clients",
+		Help:        "The current number of store-gateway clients in the pool.",
+		ConstLabels: map[string]string{"client": "querier"},
+	})
+
+	return client.NewPool("store-gateway", poolCfg, discovery, newChunksGatewayClientFactory(clientCfg, reg), clientsCount, logger)
 }
 
 type ClientConfig struct {

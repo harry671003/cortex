@@ -7,7 +7,6 @@ import (
 	"github.com/cortexproject/cortex/pkg/storegateway/storepb"
 	"github.com/cortexproject/cortex/pkg/storegateway/typespb"
 	"github.com/go-kit/log"
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/tsdb/chunks"
@@ -58,7 +57,8 @@ type blockSeriesClient struct {
 	batchSize int
 
 	// New stuff
-	blockIndexClient blockIndexClient
+	blockIndexClient *blockIndexClient
+	blockChunkClient *blockChunkClient
 }
 
 func newBlockSeriesClient(
@@ -110,6 +110,17 @@ func newBlockSeriesClient(
 		tenant,
 	)
 
+	blockChunkClient := newBlockChunkClient(
+		ctx,
+		logger,
+		b,
+		limiter,
+		bytesLimiter,
+		calculateChunkHash,
+		chunkFetchDuration,
+		chunkFetchDurationSum,
+	)
+
 	return &blockSeriesClient{
 		ctx:             ctx,
 		logger:          logger,
@@ -140,7 +151,8 @@ func newBlockSeriesClient(
 		tenant:             tenant,
 
 		// New
-		blockIndexClient: *blockIndexClient,
+		blockIndexClient: blockIndexClient,
+		blockChunkClient: blockChunkClient,
 	}
 }
 
@@ -204,19 +216,5 @@ func (b *blockSeriesClient) nextBatch(tenant string) error {
 		return nil
 	}
 
-	b.chunkr.reset()
-
-	for i, s := range b.entries {
-		for j := range s.chks {
-			if err := b.chunkr.addLoad(s.refs[j], i, j); err != nil {
-				return errors.Wrap(err, "add chunk load")
-			}
-		}
-	}
-
-	if err := b.chunkr.load(b.ctx, b.entries, b.loadAggregates, b.calculateChunkHash, b.bytesLimiter, b.tenant); err != nil {
-		return errors.Wrap(err, "load chunks")
-	}
-
-	return nil
+	return b.blockChunkClient.loadChunks(b.entries)
 }
