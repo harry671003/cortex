@@ -730,46 +730,11 @@ func (q *blocksStoreQuerier) fetchSeriesFromStores(
 			}
 
 			myQueriedBlocks = append(myQueriedBlocks, blockID)
-
-			clients, err := q.chunksStores.GetClientsFor(userID, []ulid.ULID{blockID}, map[ulid.ULID][]string{}, map[ulid.ULID]map[string]int{})
-			if err != nil {
-				return err
-			}
-			chunksClient := clients[blockID]
-			level.Info(q.logger).Log("msg", "found chunk-gateway instances to query", "num instances", len(clients), "clients", fmt.Sprintf("%v", clients))
-
-			chunksStream, err := chunksClient.Chunks(gCtx)
-			if err != nil {
-				return err
-			}
-
-			chunks := make([][]*typespb.AggrChunk, 0, len(mySeries))
-
-			for _, s := range mySeries {
-				refs := make([]uint64, 0, len(s.Chunks))
-				for _, meta := range s.Chunks {
-					refs = append(refs, meta.Ref)
-				}
-				chunksStream.Send(&storepb.ChunksRequest{
-					BlockId:  blockID.String(),
-					Chunkref: refs,
-				})
-			}
-			chunksStream.CloseSend()
-
-			for {
-				in, err := chunksStream.Recv()
-
-				if err == io.EOF {
-					break
-				}
-				if err != nil {
-					return err
-				}
-				chunks = append(chunks, in.Chunks)
-			}
-
 			numSeries := len(mySeries)
+			chunks, err := q.fetchChunksFromStore(gCtx, userID, blockID, mySeries)
+			if err != nil {
+				return err
+			}
 
 			reqStats.AddFetchedSeries(uint64(numSeries))
 
@@ -800,6 +765,83 @@ func (q *blocksStoreQuerier) fetchSeriesFromStores(
 	}
 
 	return seriesSets, queriedBlocks, warnings, int(numChunks.Load()), nil, merr.Err()
+}
+
+func (q *blocksStoreQuerier) fetchChunksFromStore(ctx context.Context, userID string, blockID ulid.ULID, series []*typespb.SelectedSeries) ([][]*typespb.AggrChunk, error) {
+	chunks := make([][]*typespb.AggrChunk, len(series))
+
+	g, gCtx := errgroup.WithContext(ctx)
+	batchSize := 10000
+
+	for i := 0; i < len(series); i += batchSize {
+		j := i + batchSize
+		if j > len(series) {
+			j = len(series)
+		}
+
+		start := i
+		end := j
+
+		g.Go(func() error {
+			chks, err := q.fetchChunksForBatch(gCtx, userID, blockID, series[start:end])
+			if err != nil {
+				return err
+			}
+			for i, chk := range chks {
+				chunks[start+i] = chk
+			}
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	return chunks, nil
+}
+
+func (q *blocksStoreQuerier) fetchChunksForBatch(ctx context.Context, userID string, blockID ulid.ULID, series []*typespb.SelectedSeries) ([][]*typespb.AggrChunk, error) {
+	clients, err := q.chunksStores.GetClientsFor(userID, []ulid.ULID{blockID}, map[ulid.ULID][]string{}, map[ulid.ULID]map[string]int{})
+	if err != nil {
+		return nil, err
+	}
+	chunksClient := clients[blockID]
+	level.Info(q.logger).Log("msg", "found chunk-gateway instances to query", "num instances", len(clients), "clients", fmt.Sprintf("%v", clients))
+
+	chunksStream, err := chunksClient.Chunks(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	chunks := make([][]*typespb.AggrChunk, 0, len(series))
+
+	// Get in batches of 10K series.
+	for _, s := range series {
+		refs := make([]uint64, 0, len(s.Chunks))
+		for _, meta := range s.Chunks {
+			refs = append(refs, meta.Ref)
+		}
+		chunksStream.Send(&storepb.ChunksRequest{
+			BlockId:  blockID.String(),
+			Chunkref: refs,
+		})
+	}
+	chunksStream.CloseSend()
+
+	for {
+		in, err := chunksStream.Recv()
+
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		chunks = append(chunks, in.Chunks)
+	}
+
+	return chunks, nil
 }
 
 func (q *blocksStoreQuerier) fetchLabelNamesFromStore(

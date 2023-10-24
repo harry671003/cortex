@@ -1548,14 +1548,12 @@ func (s *BucketStore) Chunks(srv storepb.ChunkStore_ChunksServer) (err error) {
 		}
 
 		if block == nil {
-			fmt.Println("Trying to get the block again")
 			id, err := ulid.Parse(in.BlockId)
 			if err != nil {
 				return err
 			}
 
 			if block = s.getBlock(id); block == nil {
-				fmt.Println("BLOCK is nil")
 				return errors.New("block not found")
 			}
 		}
@@ -1575,10 +1573,6 @@ func (s *BucketStore) Chunks(srv storepb.ChunkStore_ChunksServer) (err error) {
 
 	if len(entries) == 0 {
 		return
-	}
-
-	if block == nil {
-		fmt.Println("BLOCK NIL")
 	}
 
 	client = newBlockChunkClient(
@@ -2305,7 +2299,6 @@ func (b *bucketBlock) indexReader() *bucketIndexReader {
 }
 
 func (b *bucketBlock) chunkReader() *bucketChunkReader {
-	fmt.Println("CALL chunkReader")
 	b.pendingReaders.Add(1)
 	return newBucketChunkReader(b)
 }

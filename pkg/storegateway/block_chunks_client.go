@@ -2,7 +2,6 @@ package storegateway
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/cortexproject/cortex/pkg/storegateway/storepb"
 	"github.com/go-kit/log"
@@ -45,9 +44,6 @@ func newBlockChunkClient(
 }
 
 func (b *blockChunkClient) loadChunks(entries []seriesEntry) error {
-	if b.chunkr == nil {
-		fmt.Println("NIL inloadChunks")
-	}
 	b.chunkr.reset()
 
 	for i, s := range entries {

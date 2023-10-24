@@ -395,9 +395,6 @@ func initQueryableForEngine(cfg Config, limits *validation.Overrides, reg promet
 		cfg.Querier.StoreGatewayAddresses = fmt.Sprintf("127.0.0.1:%d", cfg.Server.GRPCListenPort)
 	}
 
-	fmt.Printf("StoreGatewayAddresses: %v", cfg.Querier.StoreGatewayAddresses)
-	fmt.Printf("ChunkGatewayAddresses: %v", cfg.Querier.ChunksGatewayAddresses)
-
 	return querier.NewBlocksStoreQueryableFromConfig(cfg.Querier, cfg.StoreGateway, cfg.BlocksStorage, limits, util_log.Logger, reg)
 }
 

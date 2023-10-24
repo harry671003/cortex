@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"sort"
 	"sync"
@@ -45,7 +44,6 @@ type bucketChunkReader struct {
 }
 
 func newBucketChunkReader(block *bucketBlock) *bucketChunkReader {
-	fmt.Println("CALL newBucketChunkReader")
 	return &bucketChunkReader{
 		block:  block,
 		stats:  &queryStats{},
