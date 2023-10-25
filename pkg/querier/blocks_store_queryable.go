@@ -731,20 +731,27 @@ func (q *blocksStoreQuerier) fetchSeriesFromStores(
 
 			myQueriedBlocks = append(myQueriedBlocks, blockID)
 			numSeries := len(mySeries)
+
+			level.Info(spanLog).Log("msg", "received series from index-gateway",
+				"instance", c.RemoteAddress(),
+				"requested blocks", blockID.String(),
+				"queried blocks", strings.Join(convertULIDsToString(myQueriedBlocks), " "),
+				"found series", len(mySeries),
+			)
+
 			chunks, err := q.fetchChunksFromStore(gCtx, userID, blockID, mySeries)
 			if err != nil {
 				return err
 			}
 
-			reqStats.AddFetchedSeries(uint64(numSeries))
-
-			level.Info(spanLog).Log("msg", "received series from store-gateway",
+			level.Info(spanLog).Log("msg", "received chunks from chunks-gateway",
 				"instance", c.RemoteAddress(),
 				"requested blocks", blockID.String(),
 				"queried blocks", strings.Join(convertULIDsToString(myQueriedBlocks), " "),
-				"found series", len(mySeries),
 				"found chunks", len(chunks),
 			)
+
+			reqStats.AddFetchedSeries(uint64(numSeries))
 
 			// Store the result.
 			mtx.Lock()
