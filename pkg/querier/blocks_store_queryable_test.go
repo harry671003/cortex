@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cortexproject/cortex/pkg/storegateway/storepb"
+	"github.com/cortexproject/cortex/pkg/storegateway/typespb"
 	"github.com/go-kit/log"
 	"github.com/gogo/protobuf/types"
 	"github.com/oklog/ulid"
@@ -28,7 +30,6 @@ import (
 	"github.com/thanos-io/thanos/pkg/pool"
 	"github.com/thanos-io/thanos/pkg/store/hintspb"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
-	"github.com/thanos-io/thanos/pkg/store/storepb"
 	"github.com/weaveworks/common/user"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -1534,18 +1535,18 @@ func TestBlocksStoreQuerier_PromQLExecution(t *testing.T) {
 			gateway1 := &storeGatewayClientMock{remoteAddr: "1.1.1.1", mockedSeriesResponses: []*storepb.SeriesResponse{
 				{
 					Result: &storepb.SeriesResponse_Series{
-						Series: &storepb.Series{
+						Series: &typespb.Series{
 							Labels: series1,
-							Chunks: []storepb.AggrChunk{
+							Chunks: []typespb.AggrChunk{
 								createAggrChunkWithSamples(series1Samples[:3]...), // First half.
 							},
 						},
 					},
 				}, {
 					Result: &storepb.SeriesResponse_Series{
-						Series: &storepb.Series{
+						Series: &typespb.Series{
 							Labels: series2,
-							Chunks: []storepb.AggrChunk{
+							Chunks: []typespb.AggrChunk{
 								createAggrChunkWithSamples(series2Samples[:3]...),
 							},
 						},
@@ -1557,18 +1558,18 @@ func TestBlocksStoreQuerier_PromQLExecution(t *testing.T) {
 			gateway2 := &storeGatewayClientMock{remoteAddr: "2.2.2.2", mockedSeriesResponses: []*storepb.SeriesResponse{
 				{
 					Result: &storepb.SeriesResponse_Series{
-						Series: &storepb.Series{
+						Series: &typespb.Series{
 							Labels: series1,
-							Chunks: []storepb.AggrChunk{
+							Chunks: []typespb.AggrChunk{
 								createAggrChunkWithSamples(series1Samples[3:]...), // Second half.
 							},
 						},
 					},
 				}, {
 					Result: &storepb.SeriesResponse_Series{
-						Series: &storepb.Series{
+						Series: &typespb.Series{
 							Labels: series2,
-							Chunks: []storepb.AggrChunk{
+							Chunks: []typespb.AggrChunk{
 								createAggrChunkWithSamples(series2Samples[3:]...),
 							},
 						},
@@ -1576,6 +1577,8 @@ func TestBlocksStoreQuerier_PromQLExecution(t *testing.T) {
 				},
 				mockHintsResponse(block2),
 			}}
+
+			chunkGateway := &chunkGatewayClientMock{remoteAddr: "1.1.1.1"}
 
 			stores := &blocksStoreSetMock{
 				Service: services.NewIdleService(nil, nil),
@@ -1587,8 +1590,18 @@ func TestBlocksStoreQuerier_PromQLExecution(t *testing.T) {
 				},
 			}
 
+			chunkStores := &chunksStoreSetMock{
+				Service: services.NewIdleService(nil, nil),
+				mockedResponses: []interface{}{
+					map[ChunksStoreClient][]ulid.ULID{
+						chunkGateway: {block1},
+						chunkGateway: {block2},
+					},
+				},
+			}
+
 			// Instance the querier that will be executed to run the query.
-			queryable, err := NewBlocksStoreQueryable(stores, finder, NewBlocksConsistencyChecker(0, 0, logger, nil), &blocksStoreLimitsMock{}, 0, logger, nil)
+			queryable, err := NewBlocksStoreQueryable(stores, chunkStores, finder, NewBlocksConsistencyChecker(0, 0, logger, nil), &blocksStoreLimitsMock{}, 0, logger, nil)
 			require.NoError(t, err)
 			require.NoError(t, services.StartAndAwaitRunning(context.Background(), queryable))
 			defer services.StopAndAwaitTerminated(context.Background(), queryable) // nolint:errcheck
@@ -1621,7 +1634,7 @@ type blocksStoreSetMock struct {
 	nextResult      int
 }
 
-func (m *blocksStoreSetMock) GetClientsFor(_ string, _ []ulid.ULID, _ map[ulid.ULID][]string, _ map[ulid.ULID]map[string]int) (map[BlocksStoreClient][]ulid.ULID, error) {
+func (m *blocksStoreSetMock) GetClientsFor(_ string, _ []ulid.ULID, _ map[ulid.ULID][]string, _ map[ulid.ULID]map[string]int) (map[ulid.ULID]BlocksStoreClient, error) {
 	if m.nextResult >= len(m.mockedResponses) {
 		panic("not enough mocked results")
 	}
@@ -1632,7 +1645,32 @@ func (m *blocksStoreSetMock) GetClientsFor(_ string, _ []ulid.ULID, _ map[ulid.U
 	if err, ok := res.(error); ok {
 		return nil, err
 	}
-	if clients, ok := res.(map[BlocksStoreClient][]ulid.ULID); ok {
+	if clients, ok := res.(map[ulid.ULID]BlocksStoreClient); ok {
+		return clients, nil
+	}
+
+	return nil, errors.New("unknown data type in the mocked result")
+}
+
+type chunksStoreSetMock struct {
+	services.Service
+
+	mockedResponses []interface{}
+	nextResult      int
+}
+
+func (m *chunksStoreSetMock) GetClientsFor(_ string, _ []ulid.ULID, _ map[ulid.ULID][]string, _ map[ulid.ULID]map[string]int) (map[ulid.ULID]ChunksStoreClient, error) {
+	if m.nextResult >= len(m.mockedResponses) {
+		panic("not enough mocked results")
+	}
+
+	res := m.mockedResponses[m.nextResult]
+	m.nextResult++
+
+	if err, ok := res.(error); ok {
+		return nil, err
+	}
+	if clients, ok := res.(map[ulid.ULID]ChunksStoreClient); ok {
 		return clients, nil
 	}
 
@@ -1649,9 +1687,40 @@ func (m *blocksFinderMock) GetBlocks(ctx context.Context, userID string, minT, m
 	return args.Get(0).(bucketindex.Blocks), args.Get(1).(map[ulid.ULID]*bucketindex.BlockDeletionMark), args.Error(2)
 }
 
+type chunkGatewayClientMock struct {
+	remoteAddr            string
+	mockedChunksResponses []*storepb.ChunksResponse
+	mockedSeriesErr       error
+}
+
+func (m *chunkGatewayClientMock) RemoteAddress() string {
+	return m.remoteAddr
+}
+
+func (m *chunkGatewayClientMock) Chunks(ctx context.Context, opts ...grpc.CallOption) (storegatewaypb.ChunksGateway_ChunksClient, error) {
+	chunksClient := &chunkGatewayChunksClientMock{}
+
+	return chunksClient, m.mockedSeriesErr
+}
+
+type chunkGatewayChunksClientMock struct {
+	grpc.ClientStream
+}
+
+// Recv implements storegatewaypb.ChunksGateway_ChunksClient.
+func (*chunkGatewayChunksClientMock) Recv() (*storepb.ChunksResponse, error) {
+	return nil, io.EOF
+}
+
+// Send implements storegatewaypb.ChunksGateway_ChunksClient.
+func (*chunkGatewayChunksClientMock) Send(*storepb.ChunksRequest) error {
+	return nil
+}
+
 type storeGatewayClientMock struct {
 	remoteAddr                string
 	mockedSeriesResponses     []*storepb.SeriesResponse
+	mockedSelectResponses     []*storepb.SelectResponse
 	mockedSeriesErr           error
 	mockedSeriesStreamErr     error
 	mockedLabelNamesResponse  *storepb.LabelNamesResponse
@@ -1662,6 +1731,15 @@ type storeGatewayClientMock struct {
 func (m *storeGatewayClientMock) Series(ctx context.Context, in *storepb.SeriesRequest, opts ...grpc.CallOption) (storegatewaypb.StoreGateway_SeriesClient, error) {
 	seriesClient := &storeGatewaySeriesClientMock{
 		mockedResponses:       m.mockedSeriesResponses,
+		mockedSeriesStreamErr: m.mockedSeriesStreamErr,
+	}
+
+	return seriesClient, m.mockedSeriesErr
+}
+
+func (m *storeGatewayClientMock) Select(ctx context.Context, in *storepb.SelectRequest, opts ...grpc.CallOption) (storegatewaypb.StoreGateway_SelectClient, error) {
+	seriesClient := &storeGatewaySelectClientMock{
+		mockedResponses:       m.mockedSelectResponses,
 		mockedSeriesStreamErr: m.mockedSeriesStreamErr,
 	}
 
@@ -1688,6 +1766,26 @@ type storeGatewaySeriesClientMock struct {
 }
 
 func (m *storeGatewaySeriesClientMock) Recv() (*storepb.SeriesResponse, error) {
+	// Ensure some concurrency occurs.
+	time.Sleep(10 * time.Millisecond)
+
+	if len(m.mockedResponses) == 0 {
+		return nil, io.EOF
+	}
+
+	res := m.mockedResponses[0]
+	m.mockedResponses = m.mockedResponses[1:]
+	return res, m.mockedSeriesStreamErr
+}
+
+type storeGatewaySelectClientMock struct {
+	grpc.ClientStream
+
+	mockedResponses       []*storepb.SelectResponse
+	mockedSeriesStreamErr error
+}
+
+func (m *storeGatewaySelectClientMock) Recv() (*storepb.SelectResponse, error) {
 	// Ensure some concurrency occurs.
 	time.Sleep(10 * time.Millisecond)
 
@@ -1737,10 +1835,10 @@ func mockSeriesResponse(lbls labels.Labels, timeMillis int64, value float64) *st
 
 	return &storepb.SeriesResponse{
 		Result: &storepb.SeriesResponse_Series{
-			Series: &storepb.Series{
+			Series: &typespb.Series{
 				Labels: labelpb.ZLabelsFromPromLabels(lbls),
-				Chunks: []storepb.AggrChunk{
-					{MinTime: timeMillis, MaxTime: timeMillis, Raw: &storepb.Chunk{Type: storepb.Chunk_XOR, Data: chunkData}},
+				Chunks: []typespb.AggrChunk{
+					{MinTime: timeMillis, MaxTime: timeMillis, Raw: &typespb.Chunk{Type: typespb.XOR, Data: chunkData}},
 				},
 			},
 		},
@@ -1839,17 +1937,17 @@ func TestCountSamplesAndChunks(t *testing.T) {
 	}
 
 	for i, tc := range []struct {
-		serieses        []*storepb.Series
+		serieses        []*typespb.Series
 		expectedChunks  uint64
 		expectedSamples uint64
 	}{
 		{
-			serieses: []*storepb.Series{
+			serieses: []*typespb.Series{
 				{
-					Chunks: []storepb.AggrChunk{
+					Chunks: []typespb.AggrChunk{
 						{
-							Raw: &storepb.Chunk{
-								Type: storepb.Chunk_XOR,
+							Raw: &typespb.Chunk{
+								Type: typespb.XOR,
 								Data: c.Bytes(),
 							},
 						},
@@ -1860,18 +1958,18 @@ func TestCountSamplesAndChunks(t *testing.T) {
 			expectedChunks:  1,
 		},
 		{
-			serieses: []*storepb.Series{
+			serieses: []*typespb.Series{
 				{
-					Chunks: []storepb.AggrChunk{
+					Chunks: []typespb.AggrChunk{
 						{
-							Raw: &storepb.Chunk{
-								Type: storepb.Chunk_XOR,
+							Raw: &typespb.Chunk{
+								Type: typespb.XOR,
 								Data: c.Bytes(),
 							},
 						},
 						{
-							Raw: &storepb.Chunk{
-								Type: storepb.Chunk_XOR,
+							Raw: &typespb.Chunk{
+								Type: typespb.XOR,
 								Data: c.Bytes(),
 							},
 						},

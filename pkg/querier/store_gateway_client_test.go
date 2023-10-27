@@ -5,11 +5,11 @@ import (
 	"net"
 	"testing"
 
+	"github.com/cortexproject/cortex/pkg/storegateway/storepb"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/thanos-io/thanos/pkg/store/storepb"
 	"github.com/weaveworks/common/user"
 	"google.golang.org/grpc"
 
@@ -71,6 +71,10 @@ func Test_newStoreGatewayClientFactory(t *testing.T) {
 type mockStoreGatewayServer struct{}
 
 func (m *mockStoreGatewayServer) Series(_ *storepb.SeriesRequest, srv storegatewaypb.StoreGateway_SeriesServer) error {
+	return nil
+}
+
+func (m *mockStoreGatewayServer) Select(_ *storepb.SelectRequest, srv storegatewaypb.StoreGateway_SelectServer) error {
 	return nil
 }
 

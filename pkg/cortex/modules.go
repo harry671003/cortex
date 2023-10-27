@@ -27,6 +27,7 @@ import (
 	"github.com/cortexproject/cortex/pkg/alertmanager"
 	"github.com/cortexproject/cortex/pkg/alertmanager/alertstore"
 	"github.com/cortexproject/cortex/pkg/api"
+	"github.com/cortexproject/cortex/pkg/chunksgateway"
 	"github.com/cortexproject/cortex/pkg/compactor"
 	configAPI "github.com/cortexproject/cortex/pkg/configs/api"
 	"github.com/cortexproject/cortex/pkg/configs/db"
@@ -81,6 +82,7 @@ const (
 	AlertManager             string = "alertmanager"
 	Compactor                string = "compactor"
 	StoreGateway             string = "store-gateway"
+	ChunksGateway            string = "chunks-gateway"
 	MemberlistKV             string = "memberlist-kv"
 	TenantDeletion           string = "tenant-deletion"
 	Purger                   string = "purger"
@@ -681,6 +683,20 @@ func (t *Cortex) initStoreGateway() (serv services.Service, err error) {
 	return t.StoreGateway, nil
 }
 
+func (t *Cortex) initChunksGateway() (serv services.Service, err error) {
+	t.Cfg.StoreGateway.ShardingRing.ListenPort = t.Cfg.Server.GRPCListenPort
+
+	t.ChunksGateway, err = chunksgateway.NewChunksGateway(t.Cfg.StoreGateway, t.Cfg.BlocksStorage, t.Overrides, t.Cfg.Server.LogLevel, util_log.Logger, prometheus.DefaultRegisterer)
+	if err != nil {
+		return nil, err
+	}
+
+	// Expose HTTP endpoints.
+	t.API.RegisterChunksGateway(t.ChunksGateway)
+
+	return t.ChunksGateway, nil
+}
+
 func (t *Cortex) initMemberlistKV() (services.Service, error) {
 	reg := prometheus.DefaultRegisterer
 	t.Cfg.MemberlistKV.MetricsRegisterer = reg
@@ -759,6 +775,7 @@ func (t *Cortex) setupModuleManager() error {
 	mm.RegisterModule(AlertManager, t.initAlertManager)
 	mm.RegisterModule(Compactor, t.initCompactor)
 	mm.RegisterModule(StoreGateway, t.initStoreGateway)
+	mm.RegisterModule(ChunksGateway, t.initChunksGateway)
 	mm.RegisterModule(TenantDeletion, t.initTenantDeletionAPI, modules.UserInvisibleModule)
 	mm.RegisterModule(Purger, nil)
 	mm.RegisterModule(QueryScheduler, t.initQueryScheduler)
@@ -790,10 +807,11 @@ func (t *Cortex) setupModuleManager() error {
 		AlertManager:             {API, MemberlistKV, Overrides},
 		Compactor:                {API, MemberlistKV, Overrides},
 		StoreGateway:             {API, Overrides, MemberlistKV},
+		ChunksGateway:            {API, Overrides, MemberlistKV},
 		TenantDeletion:           {API, Overrides, DeleteRequestsStore},
 		Purger:                   {TenantDeletion},
 		TenantFederation:         {Queryable},
-		All:                      {QueryFrontend, Querier, Ingester, Distributor, Purger, StoreGateway, Ruler},
+		All:                      {QueryFrontend, Querier, Ingester, Distributor, Purger, ChunksGateway, StoreGateway, Ruler},
 	}
 	if t.Cfg.ExternalPusher != nil && t.Cfg.ExternalQueryable != nil {
 		deps[Ruler] = []string{Overrides, DeleteRequestsStore, RulerStorage}

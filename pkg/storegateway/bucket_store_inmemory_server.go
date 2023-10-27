@@ -3,11 +3,12 @@ package storegateway
 import (
 	"context"
 
+	"github.com/cortexproject/cortex/pkg/storegateway/storepb"
+	"github.com/cortexproject/cortex/pkg/storegateway/typespb"
 	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 	"github.com/prometheus/prometheus/util/annotations"
 	"github.com/thanos-io/thanos/pkg/store/hintspb"
-	"github.com/thanos-io/thanos/pkg/store/storepb"
 )
 
 // bucketStoreSeriesServer is a fake in-memory gRPC server used to
@@ -19,7 +20,7 @@ type bucketStoreSeriesServer struct {
 
 	ctx context.Context
 
-	SeriesSet []*storepb.Series
+	SeriesSet []*typespb.Series
 	Warnings  annotations.Annotations
 	Hints     hintspb.SeriesResponseHints
 }
@@ -50,7 +51,7 @@ func (s *bucketStoreSeriesServer) Send(r *storepb.SeriesResponse) error {
 			return errors.Wrap(err, "marshal received series")
 		}
 
-		copiedSeries := &storepb.Series{}
+		copiedSeries := &typespb.Series{}
 		if err = copiedSeries.Unmarshal(recvSeriesData); err != nil {
 			return errors.Wrap(err, "unmarshal received series")
 		}

@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"gopkg.in/yaml.v2"
 
+	"github.com/cortexproject/cortex/pkg/chunksgateway"
 	"github.com/cortexproject/cortex/pkg/util/grpcclient"
 
 	"github.com/cortexproject/cortex/pkg/alertmanager"
@@ -308,14 +309,15 @@ type Cortex struct {
 	QuerierEngine            v1.QueryEngine
 	QueryFrontendTripperware tripperware.Tripperware
 
-	Ruler        *ruler.Ruler
-	RulerStorage rulestore.RuleStore
-	ConfigAPI    *configAPI.API
-	ConfigDB     db.DB
-	Alertmanager *alertmanager.MultitenantAlertmanager
-	Compactor    *compactor.Compactor
-	StoreGateway *storegateway.StoreGateway
-	MemberlistKV *memberlist.KVInitService
+	Ruler         *ruler.Ruler
+	RulerStorage  rulestore.RuleStore
+	ConfigAPI     *configAPI.API
+	ConfigDB      db.DB
+	Alertmanager  *alertmanager.MultitenantAlertmanager
+	Compactor     *compactor.Compactor
+	StoreGateway  *storegateway.StoreGateway
+	ChunksGateway *chunksgateway.ChunksGateway
+	MemberlistKV  *memberlist.KVInitService
 
 	// Queryables that the querier should use to query the long
 	// term storage. It depends on the storage engine used.

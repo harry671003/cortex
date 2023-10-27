@@ -39,7 +39,7 @@ func TestBlocksStoreBalancedSet_GetClientsFor(t *testing.T) {
 		require.Len(t, clients, 1)
 
 		var clientAddr string
-		for c := range clients {
+		for _, c := range clients {
 			clientAddr = c.RemoteAddress()
 		}
 
@@ -80,14 +80,15 @@ func TestBlocksStoreBalancedSet_GetClientsFor_Exclude(t *testing.T) {
 		serviceAddrs    []string
 		queryBlocks     []ulid.ULID
 		exclude         map[ulid.ULID][]string
-		expectedClients map[string][]ulid.ULID
+		expectedClients map[ulid.ULID]string
 		expectedErr     error
 	}{
 		"no exclude": {
 			serviceAddrs: []string{"127.0.0.1"},
 			queryBlocks:  []ulid.ULID{block1, block2},
-			expectedClients: map[string][]ulid.ULID{
-				"127.0.0.1": {block1, block2},
+			expectedClients: map[ulid.ULID]string{
+				block1: "127.0.0.1",
+				block2: "127.0.0.1",
 			},
 		},
 		"single instance available and excluded for a non-queried block": {
@@ -96,8 +97,8 @@ func TestBlocksStoreBalancedSet_GetClientsFor_Exclude(t *testing.T) {
 			exclude: map[ulid.ULID][]string{
 				block2: {"127.0.0.1"},
 			},
-			expectedClients: map[string][]ulid.ULID{
-				"127.0.0.1": {block1},
+			expectedClients: map[ulid.ULID]string{
+				block1: "127.0.0.1",
 			},
 		},
 		"single instance available and excluded for the queried block": {
@@ -115,9 +116,9 @@ func TestBlocksStoreBalancedSet_GetClientsFor_Exclude(t *testing.T) {
 				block1: {"127.0.0.1"},
 				block2: {"127.0.0.2"},
 			},
-			expectedClients: map[string][]ulid.ULID{
-				"127.0.0.1": {block2},
-				"127.0.0.2": {block1},
+			expectedClients: map[ulid.ULID]string{
+				block2: "127.0.0.1",
+				block1: "127.0.0.2",
 			},
 		},
 		"multiple instances available and all are excluded for the queried block": {

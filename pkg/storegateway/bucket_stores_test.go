@@ -15,6 +15,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cortexproject/cortex/pkg/storegateway/storepb"
+	"github.com/cortexproject/cortex/pkg/storegateway/typespb"
 	"github.com/go-kit/log"
 	"github.com/gogo/status"
 	"github.com/oklog/ulid"
@@ -31,7 +33,6 @@ import (
 	thanos_metadata "github.com/thanos-io/thanos/pkg/block/metadata"
 	"github.com/thanos-io/thanos/pkg/store"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
-	"github.com/thanos-io/thanos/pkg/store/storepb"
 	"github.com/weaveworks/common/logging"
 	"go.uber.org/atomic"
 	"google.golang.org/grpc/codes"
@@ -120,7 +121,7 @@ func TestBucketStores_CustomerKeyError(t *testing.T) {
 			require.NoError(t, err)
 
 			reg := prometheus.NewPedanticRegistry()
-			stores, err := NewBucketStores(cfg, NewNoShardingStrategy(), mBucket, defaultLimitsOverrides(t), mockLoggingLevel(), log.NewNopLogger(), reg)
+			stores, err := NewBucketStores(cfg, NewNoShardingStrategy(), mBucket, true, defaultLimitsOverrides(t), mockLoggingLevel(), log.NewNopLogger(), reg)
 			require.NoError(t, err)
 
 			if tc.mockInitialSync {
@@ -200,7 +201,7 @@ func TestBucketStores_InitialSync(t *testing.T) {
 	require.NoError(t, err)
 
 	reg := prometheus.NewPedanticRegistry()
-	stores, err := NewBucketStores(cfg, NewNoShardingStrategy(), bucket, defaultLimitsOverrides(t), mockLoggingLevel(), log.NewNopLogger(), reg)
+	stores, err := NewBucketStores(cfg, NewNoShardingStrategy(), bucket, true, defaultLimitsOverrides(t), mockLoggingLevel(), log.NewNopLogger(), reg)
 	require.NoError(t, err)
 
 	// Query series before the initial sync.
@@ -276,7 +277,7 @@ func TestBucketStores_InitialSyncShouldRetryOnFailure(t *testing.T) {
 	bucket = &failFirstGetBucket{Bucket: bucket}
 
 	reg := prometheus.NewPedanticRegistry()
-	stores, err := NewBucketStores(cfg, NewNoShardingStrategy(), bucket, defaultLimitsOverrides(t), mockLoggingLevel(), log.NewNopLogger(), reg)
+	stores, err := NewBucketStores(cfg, NewNoShardingStrategy(), bucket, true, defaultLimitsOverrides(t), mockLoggingLevel(), log.NewNopLogger(), reg)
 	require.NoError(t, err)
 
 	// Initial sync should succeed even if a transient error occurs.
@@ -336,7 +337,7 @@ func TestBucketStores_SyncBlocks(t *testing.T) {
 	require.NoError(t, err)
 
 	reg := prometheus.NewPedanticRegistry()
-	stores, err := NewBucketStores(cfg, NewNoShardingStrategy(), bucket, defaultLimitsOverrides(t), mockLoggingLevel(), log.NewNopLogger(), reg)
+	stores, err := NewBucketStores(cfg, NewNoShardingStrategy(), bucket, true, defaultLimitsOverrides(t), mockLoggingLevel(), log.NewNopLogger(), reg)
 	require.NoError(t, err)
 
 	// Run an initial sync to discover 1 block.
@@ -420,12 +421,12 @@ func TestBucketStores_syncUsersBlocks(t *testing.T) {
 			bucketClient := &bucket.ClientMock{}
 			bucketClient.MockIter("", allUsers, nil)
 
-			stores, err := NewBucketStores(cfg, testData.shardingStrategy, bucketClient, defaultLimitsOverrides(t), mockLoggingLevel(), log.NewNopLogger(), nil)
+			stores, err := NewBucketStores(cfg, testData.shardingStrategy, bucketClient, true, defaultLimitsOverrides(t), mockLoggingLevel(), log.NewNopLogger(), nil)
 			require.NoError(t, err)
 
 			// Sync user stores and count the number of times the callback is called.
 			var storesCount atomic.Int32
-			err = stores.syncUsersBlocks(context.Background(), func(ctx context.Context, bs *store.BucketStore) error {
+			err = stores.syncUsersBlocks(context.Background(), func(ctx context.Context, bs *BucketStore) error {
 				storesCount.Inc()
 				return nil
 			})
@@ -465,7 +466,7 @@ func testBucketStoresSeriesShouldCorrectlyQuerySeriesSpanningMultipleChunks(t *t
 	require.NoError(t, err)
 
 	reg := prometheus.NewPedanticRegistry()
-	stores, err := NewBucketStores(cfg, NewNoShardingStrategy(), bucket, defaultLimitsOverrides(t), mockLoggingLevel(), log.NewNopLogger(), reg)
+	stores, err := NewBucketStores(cfg, NewNoShardingStrategy(), bucket, true, defaultLimitsOverrides(t), mockLoggingLevel(), log.NewNopLogger(), reg)
 	require.NoError(t, err)
 	require.NoError(t, stores.InitialSync(ctx))
 
@@ -521,7 +522,7 @@ func TestBucketStores_Series_ShouldReturnErrorIfMaxInflightRequestIsReached(t *t
 	bucket, err := filesystem.NewBucketClient(filesystem.Config{Directory: storageDir})
 	require.NoError(t, err)
 
-	stores, err := NewBucketStores(cfg, NewNoShardingStrategy(), bucket, defaultLimitsOverrides(t), mockLoggingLevel(), log.NewNopLogger(), reg)
+	stores, err := NewBucketStores(cfg, NewNoShardingStrategy(), bucket, true, defaultLimitsOverrides(t), mockLoggingLevel(), log.NewNopLogger(), reg)
 	require.NoError(t, err)
 	require.NoError(t, stores.InitialSync(context.Background()))
 
@@ -542,7 +543,7 @@ func TestBucketStores_Series_ShouldNotCheckMaxInflightRequestsIfTheLimitIsDisabl
 	bucket, err := filesystem.NewBucketClient(filesystem.Config{Directory: storageDir})
 	require.NoError(t, err)
 
-	stores, err := NewBucketStores(cfg, NewNoShardingStrategy(), bucket, defaultLimitsOverrides(t), mockLoggingLevel(), log.NewNopLogger(), reg)
+	stores, err := NewBucketStores(cfg, NewNoShardingStrategy(), bucket, true, defaultLimitsOverrides(t), mockLoggingLevel(), log.NewNopLogger(), reg)
 	require.NoError(t, err)
 	require.NoError(t, stores.InitialSync(context.Background()))
 
@@ -592,16 +593,16 @@ func generateStorageBlock(t *testing.T, storageDir, userID string, metricName st
 	require.NoError(t, db.Snapshot(userDir, true))
 }
 
-func querySeries(stores *BucketStores, userID, metricName string, minT, maxT int64) ([]*storepb.Series, annotations.Annotations, error) {
+func querySeries(stores *BucketStores, userID, metricName string, minT, maxT int64) ([]*typespb.Series, annotations.Annotations, error) {
 	req := &storepb.SeriesRequest{
 		MinTime: minT,
 		MaxTime: maxT,
-		Matchers: []storepb.LabelMatcher{{
-			Type:  storepb.LabelMatcher_EQ,
+		Matchers: []typespb.LabelMatcher{{
+			Type:  typespb.EQ,
 			Name:  labels.MetricName,
 			Value: metricName,
 		}},
-		PartialResponseStrategy: storepb.PartialResponseStrategy_ABORT,
+		PartialResponseStrategy: typespb.ABORT,
 	}
 
 	ctx := setUserIDToGRPCContext(context.Background(), userID)
@@ -615,12 +616,12 @@ func queryLabelsNames(stores *BucketStores, userID, metricName string, start, en
 	req := &storepb.LabelNamesRequest{
 		Start: start,
 		End:   end,
-		Matchers: []storepb.LabelMatcher{{
-			Type:  storepb.LabelMatcher_EQ,
+		Matchers: []typespb.LabelMatcher{{
+			Type:  typespb.EQ,
 			Name:  labels.MetricName,
 			Value: metricName,
 		}},
-		PartialResponseStrategy: storepb.PartialResponseStrategy_ABORT,
+		PartialResponseStrategy: typespb.ABORT,
 	}
 
 	ctx := setUserIDToGRPCContext(context.Background(), userID)
@@ -632,12 +633,12 @@ func queryLabelsValues(stores *BucketStores, userID, labelName, metricName strin
 		Start: start,
 		End:   end,
 		Label: labelName,
-		Matchers: []storepb.LabelMatcher{{
-			Type:  storepb.LabelMatcher_EQ,
+		Matchers: []typespb.LabelMatcher{{
+			Type:  typespb.EQ,
 			Name:  labels.MetricName,
 			Value: metricName,
 		}},
-		PartialResponseStrategy: storepb.PartialResponseStrategy_ABORT,
+		PartialResponseStrategy: typespb.ABORT,
 	}
 
 	ctx := setUserIDToGRPCContext(context.Background(), userID)
@@ -686,7 +687,7 @@ func TestBucketStores_deleteLocalFilesForExcludedTenants(t *testing.T) {
 	sharding := userShardingStrategy{}
 
 	reg := prometheus.NewPedanticRegistry()
-	stores, err := NewBucketStores(cfg, &sharding, bucket, defaultLimitsOverrides(t), mockLoggingLevel(), log.NewNopLogger(), reg)
+	stores, err := NewBucketStores(cfg, &sharding, bucket, true, defaultLimitsOverrides(t), mockLoggingLevel(), log.NewNopLogger(), reg)
 	require.NoError(t, err)
 
 	// Perform sync.

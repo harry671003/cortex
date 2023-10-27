@@ -15,6 +15,8 @@ import (
 
 	"google.golang.org/grpc/codes"
 
+	"github.com/cortexproject/cortex/pkg/storegateway/storepb"
+	"github.com/cortexproject/cortex/pkg/storegateway/typespb"
 	"github.com/go-kit/log"
 	"github.com/oklog/ulid"
 	"github.com/pkg/errors"
@@ -29,7 +31,6 @@ import (
 	"github.com/thanos-io/thanos/pkg/block"
 	"github.com/thanos-io/thanos/pkg/block/metadata"
 	"github.com/thanos-io/thanos/pkg/store/labelpb"
-	"github.com/thanos-io/thanos/pkg/store/storepb"
 	"google.golang.org/grpc/status"
 
 	"github.com/cortexproject/cortex/pkg/ring"
@@ -960,8 +961,8 @@ func TestStoreGateway_SeriesQueryingShouldRemoveExternalLabels(t *testing.T) {
 			req := &storepb.SeriesRequest{
 				MinTime: minT,
 				MaxTime: maxT,
-				Matchers: []storepb.LabelMatcher{
-					{Type: storepb.LabelMatcher_RE, Name: "__name__", Value: ".*"},
+				Matchers: []typespb.LabelMatcher{
+					{Type: typespb.RE, Name: "__name__", Value: ".*"},
 				},
 			}
 
@@ -1031,8 +1032,8 @@ func TestStoreGateway_SeriesQueryingShouldEnforceMaxChunksPerQueryLimit(t *testi
 	req := &storepb.SeriesRequest{
 		MinTime: minT,
 		MaxTime: maxT,
-		Matchers: []storepb.LabelMatcher{
-			{Type: storepb.LabelMatcher_RE, Name: "__name__", Value: ".*"},
+		Matchers: []typespb.LabelMatcher{
+			{Type: typespb.RE, Name: "__name__", Value: ".*"},
 		},
 	}
 
@@ -1120,8 +1121,8 @@ func TestStoreGateway_SeriesQueryingShouldEnforceMaxSeriesPerQueryLimit(t *testi
 	req := &storepb.SeriesRequest{
 		MinTime: minT,
 		MaxTime: maxT,
-		Matchers: []storepb.LabelMatcher{
-			{Type: storepb.LabelMatcher_RE, Name: "__name__", Value: ".*"},
+		Matchers: []typespb.LabelMatcher{
+			{Type: typespb.RE, Name: "__name__", Value: ".*"},
 		},
 	}
 
@@ -1236,7 +1237,7 @@ func mockTSDB(t *testing.T, dir string, numSeries, numBlocks int, minT, maxT int
 	require.NoError(t, db.Close())
 }
 
-func readSamplesFromChunks(rawChunks []storepb.AggrChunk) ([]sample, error) {
+func readSamplesFromChunks(rawChunks []typespb.AggrChunk) ([]sample, error) {
 	var samples []sample
 
 	for _, rawChunk := range rawChunks {

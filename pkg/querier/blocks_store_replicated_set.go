@@ -7,6 +7,7 @@ import (
 	"math/rand"
 
 	"github.com/go-kit/log"
+	"github.com/go-kit/log/level"
 	"github.com/oklog/ulid"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -36,6 +37,7 @@ type blocksStoreReplicationSet struct {
 	shardingStrategy  string
 	balancingStrategy loadBalancingStrategy
 	limits            BlocksStoreLimits
+	logger            log.Logger
 
 	zoneAwarenessEnabled      bool
 	zoneStableShuffleSharding bool
@@ -62,6 +64,7 @@ func newBlocksStoreReplicationSet(
 		shardingStrategy:  shardingStrategy,
 		balancingStrategy: balancingStrategy,
 		limits:            limits,
+		logger:            logger,
 
 		zoneAwarenessEnabled:      zoneAwarenessEnabled,
 		zoneStableShuffleSharding: zoneStableShuffleSharding,
@@ -103,7 +106,7 @@ func (s *blocksStoreReplicationSet) stopping(_ error) error {
 	return services.StopManagerAndAwaitStopped(context.Background(), s.subservices)
 }
 
-func (s *blocksStoreReplicationSet) GetClientsFor(userID string, blockIDs []ulid.ULID, exclude map[ulid.ULID][]string, attemptedBlocksZones map[ulid.ULID]map[string]int) (map[BlocksStoreClient][]ulid.ULID, error) {
+func (s *blocksStoreReplicationSet) GetClientsFor(userID string, blockIDs []ulid.ULID, exclude map[ulid.ULID][]string, attemptedBlocksZones map[ulid.ULID]map[string]int) (map[ulid.ULID]BlocksStoreClient, error) {
 	shards := map[string][]ulid.ULID{}
 
 	// If shuffle sharding is enabled, we should build a subring for the user,
@@ -126,6 +129,8 @@ func (s *blocksStoreReplicationSet) GetClientsFor(userID string, blockIDs []ulid
 			return nil, errors.Wrapf(err, "failed to get store-gateway replication set owning the block %s", blockID.String())
 		}
 
+		level.Info(s.logger).Log("msg", "GetClientsFor", "blockID", blockID.String(), "excluded", fmt.Sprintf("%v", exclude[blockID]), "attempted", fmt.Sprintf("%v", attemptedBlocksZones[blockID]))
+
 		// Pick a non excluded store-gateway instance.
 		instance := getNonExcludedInstance(set, exclude[blockID], s.balancingStrategy, s.zoneAwarenessEnabled, attemptedBlocksZones[blockID])
 		// A valid instance should have a non-empty address.
@@ -142,7 +147,7 @@ func (s *blocksStoreReplicationSet) GetClientsFor(userID string, blockIDs []ulid
 		}
 	}
 
-	clients := map[BlocksStoreClient][]ulid.ULID{}
+	clients := map[ulid.ULID]BlocksStoreClient{}
 
 	// Get the client for each store-gateway.
 	for addr, blockIDs := range shards {
@@ -151,7 +156,9 @@ func (s *blocksStoreReplicationSet) GetClientsFor(userID string, blockIDs []ulid
 			return nil, errors.Wrapf(err, "failed to get store-gateway client for %s", addr)
 		}
 
-		clients[c.(BlocksStoreClient)] = blockIDs
+		for _, bid := range blockIDs {
+			clients[bid] = c.(BlocksStoreClient)
+		}
 	}
 
 	return clients, nil

@@ -20,6 +20,7 @@ import (
 
 	"github.com/cortexproject/cortex/pkg/alertmanager"
 	"github.com/cortexproject/cortex/pkg/alertmanager/alertmanagerpb"
+	"github.com/cortexproject/cortex/pkg/chunksgateway"
 	"github.com/cortexproject/cortex/pkg/compactor"
 	"github.com/cortexproject/cortex/pkg/cortexpb"
 	"github.com/cortexproject/cortex/pkg/distributor"
@@ -365,6 +366,11 @@ func (a *API) RegisterStoreGateway(s *storegateway.StoreGateway) {
 
 	a.indexPage.AddLink(SectionAdminEndpoints, "/store-gateway/ring", "Store Gateway Ring")
 	a.RegisterRoute("/store-gateway/ring", http.HandlerFunc(s.RingHandler), false, "GET", "POST")
+}
+
+// RegisterStoreGateway registers the ring UI page associated with the store-gateway.
+func (a *API) RegisterChunksGateway(s *chunksgateway.ChunksGateway) {
+	storegatewaypb.RegisterChunksGatewayServer(a.server.GRPC, s)
 }
 
 // RegisterCompactor registers the ring UI page associated with the compactor.

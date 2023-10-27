@@ -16,13 +16,23 @@ import (
 	"github.com/thanos-io/thanos/pkg/extprom"
 
 	"github.com/cortexproject/cortex/pkg/ring/client"
-	"github.com/cortexproject/cortex/pkg/util"
+	"github.com/cortexproject/cortex/pkg/storegateway/storegatewaypb"
 	"github.com/cortexproject/cortex/pkg/util/services"
 )
 
+// BlocksStoreClient is the interface that should be implemented by any client used
+// to query a backend store-gateway.
+type ChunksStoreClient interface {
+	storegatewaypb.ChunksGatewayClient
+
+	// RemoteAddress returns the address of the remote store-gateway and is used to uniquely
+	// identify a store-gateway backend instance.
+	RemoteAddress() string
+}
+
 // BlocksStoreSet implementation used when the blocks are not sharded in the store-gateway
 // and so requests are balanced across the set of store-gateway instances.
-type blocksStoreBalancedSet struct {
+type chunksStoreBalancedSet struct {
 	services.Service
 
 	serviceAddresses []string
@@ -32,15 +42,17 @@ type blocksStoreBalancedSet struct {
 	logger log.Logger
 }
 
-func newBlocksStoreBalancedSet(serviceAddresses []string, clientConfig ClientConfig, logger log.Logger, reg prometheus.Registerer) *blocksStoreBalancedSet {
+func newChunksStoreBalancedSet(serviceAddresses []string, clientConfig ClientConfig, logger log.Logger, reg prometheus.Registerer) *chunksStoreBalancedSet {
 	const dnsResolveInterval = 10 * time.Second
 
-	dnsProviderReg := extprom.WrapRegistererWithPrefix("cortex_storegateway_client_", reg)
+	dnsProviderReg := extprom.WrapRegistererWithPrefix("cortex_chunksgateway_client_", reg)
 
-	s := &blocksStoreBalancedSet{
+	reg = extprom.WrapRegistererWithPrefix("cortex_chunksgateway_client_", reg)
+
+	s := &chunksStoreBalancedSet{
 		serviceAddresses: serviceAddresses,
 		dnsProvider:      dns.NewProvider(logger, dnsProviderReg, dns.GolangResolverType),
-		clientsPool:      newStoreGatewayClientPool(nil, clientConfig, logger, reg),
+		clientsPool:      newChunksGatewayClientPool(nil, clientConfig, logger, reg),
 		logger:           logger,
 	}
 
@@ -48,19 +60,19 @@ func newBlocksStoreBalancedSet(serviceAddresses []string, clientConfig ClientCon
 	return s
 }
 
-func (s *blocksStoreBalancedSet) starting(ctx context.Context) error {
+func (s *chunksStoreBalancedSet) starting(ctx context.Context) error {
 	// Initial DNS resolution.
 	return s.resolve(ctx)
 }
 
-func (s *blocksStoreBalancedSet) resolve(ctx context.Context) error {
+func (s *chunksStoreBalancedSet) resolve(ctx context.Context) error {
 	if err := s.dnsProvider.Resolve(ctx, s.serviceAddresses); err != nil {
 		level.Error(s.logger).Log("msg", "failed to resolve store-gateway addresses", "err", err, "addresses", s.serviceAddresses)
 	}
 	return nil
 }
 
-func (s *blocksStoreBalancedSet) GetClientsFor(_ string, blockIDs []ulid.ULID, exclude map[ulid.ULID][]string, _ map[ulid.ULID]map[string]int) (map[ulid.ULID]BlocksStoreClient, error) {
+func (s *chunksStoreBalancedSet) GetClientsFor(_ string, blockIDs []ulid.ULID, exclude map[ulid.ULID][]string, _ map[ulid.ULID]map[string]int) (map[ulid.ULID]ChunksStoreClient, error) {
 	addresses := s.dnsProvider.Addresses()
 	if len(addresses) == 0 {
 		return nil, fmt.Errorf("no address resolved for the store-gateway service addresses %s", strings.Join(s.serviceAddresses, ","))
@@ -72,7 +84,7 @@ func (s *blocksStoreBalancedSet) GetClientsFor(_ string, blockIDs []ulid.ULID, e
 	})
 
 	// Pick a non excluded client for each block.
-	clients := map[ulid.ULID]BlocksStoreClient{}
+	clients := map[ulid.ULID]ChunksStoreClient{}
 
 	for _, blockID := range blockIDs {
 		// Pick the first non excluded store-gateway instance.
@@ -86,18 +98,8 @@ func (s *blocksStoreBalancedSet) GetClientsFor(_ string, blockIDs []ulid.ULID, e
 			return nil, errors.Wrapf(err, "failed to get store-gateway client for %s", addr)
 		}
 
-		clients[blockID] = c.(BlocksStoreClient)
+		clients[blockID] = c.(ChunksStoreClient)
 	}
 
 	return clients, nil
-}
-
-func getFirstNonExcludedAddr(addresses, exclude []string) string {
-	for _, addr := range addresses {
-		if !util.StringsContain(exclude, addr) {
-			return addr
-		}
-	}
-
-	return ""
 }
