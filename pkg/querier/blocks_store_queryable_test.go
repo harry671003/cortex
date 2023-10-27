@@ -1728,7 +1728,7 @@ type storeGatewayClientMock struct {
 	mockedLabelValuesErr      error
 }
 
-func (m *storeGatewayClientMock) Series(ctx context.Context, in *storepb.SeriesRequest, opts ...grpc.CallOption) (storegatewaypb.IndexGateway_SeriesClient, error) {
+func (m *storeGatewayClientMock) Series(ctx context.Context, in *storepb.SeriesRequest, opts ...grpc.CallOption) (storegatewaypb.StoreGateway_SeriesClient, error) {
 	seriesClient := &storeGatewaySeriesClientMock{
 		mockedResponses:       m.mockedSeriesResponses,
 		mockedSeriesStreamErr: m.mockedSeriesStreamErr,
@@ -1737,7 +1737,7 @@ func (m *storeGatewayClientMock) Series(ctx context.Context, in *storepb.SeriesR
 	return seriesClient, m.mockedSeriesErr
 }
 
-func (m *storeGatewayClientMock) Select(ctx context.Context, in *storepb.SelectRequest, opts ...grpc.CallOption) (storegatewaypb.IndexGateway_SelectClient, error) {
+func (m *storeGatewayClientMock) Select(ctx context.Context, in *storepb.SelectRequest, opts ...grpc.CallOption) (storegatewaypb.StoreGateway_SelectClient, error) {
 	seriesClient := &storeGatewaySelectClientMock{
 		mockedResponses:       m.mockedSelectResponses,
 		mockedSeriesStreamErr: m.mockedSeriesStreamErr,

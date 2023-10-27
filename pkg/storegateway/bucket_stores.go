@@ -340,7 +340,7 @@ func (u *BucketStores) Series(req *storepb.SeriesRequest, srv storepb.Store_Seri
 }
 
 // Series makes a series request to the underlying user bucket store.
-func (u *BucketStores) Select(req *storepb.SelectRequest, srv storepb.IndexStore_SelectServer) error {
+func (u *BucketStores) Select(req *storepb.SelectRequest, srv storepb.Store_SelectServer) error {
 	spanLog, spanCtx := spanlogger.New(srv.Context(), "BucketStores.Series")
 	defer spanLog.Span.Finish()
 

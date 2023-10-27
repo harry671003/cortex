@@ -6,7 +6,7 @@ import "github.com/cortexproject/cortex/pkg/storegateway/typespb/types.proto";
 
 option go_package = "storegatewaypb";
 
-service IndexGateway {
+service StoreGateway {
     // Series streams each Series for given label matchers and time range.
     //
     // Series should strictly stream full series after series, optionally split by time. This means that a single frame can contain

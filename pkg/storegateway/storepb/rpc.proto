@@ -40,6 +40,9 @@ service Store {
 
     /// LabelValues returns all label values for given label name.
     rpc LabelValues(LabelValuesRequest) returns (LabelValuesResponse);
+
+    /// Series streams each Series (Labels and chunk/downsampling chunk) for given label matchers and time range.
+    rpc Select(SelectRequest) returns (stream SelectResponse);
 }
 
 message SeriesRequest {
@@ -225,18 +228,6 @@ message LabelValuesResponse {
     /// the store. The content of this field and whether it's supported depends on the
     /// implementation of a specific store.
     google.protobuf.Any hints = 3;
-}
-
-/// IndexStore represents API against instance that stores XOR encoded values with label set metadata (e.g Prometheus metrics).
-service IndexStore {
-    /// Series streams each Series (Labels and chunk/downsampling chunk) for given label matchers and time range.
-    rpc Select(SelectRequest) returns (stream SelectResponse);
-
-    /// LabelNames returns all label names constrained by the given matchers.
-    rpc LabelNames(LabelNamesRequest) returns (LabelNamesResponse);
-
-    /// LabelValues returns all label values for given label name.
-    rpc LabelValues(LabelValuesRequest) returns (LabelValuesResponse);
 }
 
 message SelectRequest {

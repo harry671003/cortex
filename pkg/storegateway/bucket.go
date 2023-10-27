@@ -1347,7 +1347,7 @@ func (s *BucketStore) Series(req *storepb.SeriesRequest, seriesSrv storepb.Store
 	return srv.Flush()
 }
 
-func (s *BucketStore) Select(req *storepb.SelectRequest, srv storepb.IndexStore_SelectServer) (err error) {
+func (s *BucketStore) Select(req *storepb.SelectRequest, srv storepb.Store_SelectServer) (err error) {
 	if s.queryGate != nil {
 		tracing.DoInSpan(srv.Context(), "store_query_gate_ismyturn", func(ctx context.Context) {
 			err = s.queryGate.Start(srv.Context())

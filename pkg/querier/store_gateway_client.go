@@ -57,7 +57,7 @@ func dialStoreGatewayClient(clientCfg grpcclient.Config, addr string, requestDur
 	}
 
 	return &storeGatewayClient{
-		IndexGatewayClient: storegatewaypb.NewIndexGatewayClient(conn),
+		StoreGatewayClient: storegatewaypb.NewStoreGatewayClient(conn),
 		HealthClient:       grpc_health_v1.NewHealthClient(conn),
 		conn:               conn,
 	}, nil
@@ -100,7 +100,7 @@ func (c *chunksGatewayClient) RemoteAddress() string {
 }
 
 type storeGatewayClient struct {
-	storegatewaypb.IndexGatewayClient
+	storegatewaypb.StoreGatewayClient
 	grpc_health_v1.HealthClient
 	conn *grpc.ClientConn
 }

@@ -358,11 +358,11 @@ func (g *StoreGateway) syncStores(ctx context.Context, reason string) {
 	}
 }
 
-func (g *StoreGateway) Series(req *storepb.SeriesRequest, srv storegatewaypb.IndexGateway_SeriesServer) error {
+func (g *StoreGateway) Series(req *storepb.SeriesRequest, srv storegatewaypb.StoreGateway_SeriesServer) error {
 	return g.stores.Series(req, srv)
 }
 
-func (g *StoreGateway) Select(req *storepb.SelectRequest, srv storegatewaypb.IndexGateway_SelectServer) error {
+func (g *StoreGateway) Select(req *storepb.SelectRequest, srv storegatewaypb.StoreGateway_SelectServer) error {
 	return g.stores.Select(req, srv)
 }
 

@@ -97,7 +97,7 @@ type BlocksFinder interface {
 // BlocksStoreClient is the interface that should be implemented by any client used
 // to query a backend store-gateway.
 type BlocksStoreClient interface {
-	storegatewaypb.IndexGatewayClient
+	storegatewaypb.StoreGatewayClient
 
 	// RemoteAddress returns the address of the remote store-gateway and is used to uniquely
 	// identify a store-gateway backend instance.
