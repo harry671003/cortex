@@ -1593,8 +1593,8 @@ github.com/prometheus/common v0.4.1/go.mod h1:TNfzLD0ON7rHzMJeJkieUDPYmFC7Snx/y8
 github.com/prometheus/common v0.9.1/go.mod h1:yhUN8i9wzaXS3w1O07YhxHEBxD+W35wd8bs7vj7HSQ4=
 github.com/prometheus/common v0.10.0/go.mod h1:Tlit/dnDKsSWFlCLTWaA1cyBgKHSMdTB80sz/V91rCo=
 github.com/prometheus/common v0.26.0/go.mod h1:M7rCNAaPfAosfx8veZJCuw84e35h3Cfd9VFqTh1DIvc=
-github.com/prometheus/common v0.62.0 h1:xasJaQlnWAeyHdUBeGjXmutelfJHWMRr+Fg4QszZ2Io=
-github.com/prometheus/common v0.62.0/go.mod h1:vyBcEuLSvWos9B1+CyL7JZ2up+uFzXhkqml0W5zIY1I=
+github.com/prometheus/common v0.63.0 h1:YR/EIY1o3mEFP/kZCD7iDMnLPlGyuU2Gb3HIcXnA98k=
+github.com/prometheus/common v0.63.0/go.mod h1:VVFF/fBIoToEnWRVkYoXEkq3R3paCoxG9PXP74SnV18=
 github.com/prometheus/exporter-toolkit v0.14.0 h1:NMlswfibpcZZ+H0sZBiTjrA3/aBFHkNZqE+iCj5EmRg=
 github.com/prometheus/exporter-toolkit v0.14.0/go.mod h1:Gu5LnVvt7Nr/oqTBUC23WILZepW0nffNo10XdhQcwWA=
 github.com/prometheus/procfs v0.0.0-20181005140218-185b4288413d/go.mod h1:c3At6R/oaqEKCNdg8wHV1ftS6bRYblBhIjjI8uT2IGk=
@@ -1695,8 +1695,8 @@ github.com/thanos-community/galaxycache v0.0.0-20211122094458-3a32041a1f1e h1:f1
 github.com/thanos-community/galaxycache v0.0.0-20211122094458-3a32041a1f1e/go.mod h1:jXcofnrSln/cLI6/dhlBxPQZEEQHVPCcFaH75M+nSzM=
 github.com/thanos-io/objstore v0.0.0-20241111205755-d1dd89d41f97 h1:VjG0mwhN1DkncwDHFvrpd12/2TLfgYNRmEQA48ikp+0=
 github.com/thanos-io/objstore v0.0.0-20241111205755-d1dd89d41f97/go.mod h1:vyzFrBXgP+fGNG2FopEGWOO/zrIuoy7zt3LpLeezRsw=
-github.com/thanos-io/promql-engine v0.0.0-20250522103302-dd83bd8fdb50 h1:RGdaDAyFOjrFJSjaPT2z8robLvQ3KxNiNEN3DojpLOs=
-github.com/thanos-io/promql-engine v0.0.0-20250522103302-dd83bd8fdb50/go.mod h1:agUazAk1yHLYSL87MdEcRbjN12DJ9OZfSUcfFLqy+F8=
+github.com/thanos-io/promql-engine v0.0.0-20250606124720-6f637b9579dc h1:Hccd/2qzk75XPvK1Oi7F8E9NvBt1kLa0AGd7ivds9nc=
+github.com/thanos-io/promql-engine v0.0.0-20250606124720-6f637b9579dc/go.mod h1:JkfCTUfgCD48IDOVm0Zpm4013dHXahoYjN2mdP2lccg=
 github.com/thanos-io/thanos v0.37.3-0.20250603135757-4ad45948cd10 h1:mtmcivEm0EoXeHTJAgjXTthyQSTLNFWrPTzpiovau3Y=
 github.com/thanos-io/thanos v0.37.3-0.20250603135757-4ad45948cd10/go.mod h1:2NvA8ZJtoGcOTriumDnJQzDmbxJz1ISGPovVAGGYDbg=
 github.com/tjhop/slog-gokit v0.1.4 h1:uj/vbDt3HaF0Py8bHPV4ti/s0utnO0miRbO277FLBKM=
